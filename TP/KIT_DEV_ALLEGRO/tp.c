@@ -9,18 +9,54 @@
 
 const float FPS = 60;  
 
-const int SCREEN_W = 960;
-const int SCREEN_H = 540;
+// Dimensão 4:3 -> 4x230 = 920 e 3x230 = 690
+const int SCREEN_W = 920; // valor original do professor: 960
+const int SCREEN_H = 690; // valor original do professor: 540
 
 // --------------------------------------------------------------------------------------------
 // funções criadas por mim:
 
-void desenhar_cenario() {
+void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
-	// Retângulo preenchido com a cor verde
-    al_draw_filled_rectangle(100, 100, 300, 200, al_map_rgb(0, 255, 0)); 
+
+	// retângulos de fundo de todas as telas
+    al_draw_filled_rectangle(0, 0*SCREEN_H/6.0, SCREEN_W, 1*SCREEN_H/6.0, al_map_rgb(104,116,208));
+	al_draw_filled_rectangle(0, 1*SCREEN_H/6.0, SCREEN_W, 2*SCREEN_H/6.0, al_map_rgb(108,108,108));
+	al_draw_filled_rectangle(0, 2*SCREEN_H/6.0, SCREEN_W, 3*SCREEN_H/6.0, al_map_rgb(64,124,64));
+	al_draw_filled_rectangle(0, 3*SCREEN_H/6.0, SCREEN_W, 4*SCREEN_H/6.0, al_map_rgb(64,124,64));
+	al_draw_filled_rectangle(0, 4*SCREEN_H/6.0, SCREEN_W, 5*SCREEN_H/6.0, al_map_rgb(64,124,64));
+	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0, SCREEN_W, 6*SCREEN_H/6.0, al_map_rgb(176,176,176));
+
+	// imagem da cidade ao fundo
+	al_draw_bitmap(imagem_cidade, 0, 1*SCREEN_H/6.0, 0);
+
+	// retângulos separadores dos retângulos de fundo
+	// são dois para cada: um mais claro e outro mais escuro
+	int largura = SCREEN_H/60.0;
+	al_draw_filled_rectangle(0, 2*SCREEN_H/6.0, SCREEN_W, 2*SCREEN_H/6.0 + largura, al_map_rgb(184,184,64));
+	al_draw_filled_rectangle(0, 2*SCREEN_H/6.0 + largura, SCREEN_W, 2*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
+	al_draw_filled_rectangle(0, 3*SCREEN_H/6.0, SCREEN_W, 3*SCREEN_H/6.0 + largura, al_map_rgb(184,184,64));
+	al_draw_filled_rectangle(0, 3*SCREEN_H/6.0 + largura, SCREEN_W, 3*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
+	al_draw_filled_rectangle(0, 4*SCREEN_H/6.0, SCREEN_W, 4*SCREEN_H/6.0 + largura, al_map_rgb(184,184,64));
+	al_draw_filled_rectangle(0, 4*SCREEN_H/6.0 + largura, SCREEN_W, 4*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
+	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0, SCREEN_W, 5*SCREEN_H/6.0 + largura, al_map_rgb(184,184,64));
+	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0 + largura, SCREEN_W, 5*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
+
+	// elementos estáticos
+
+	// tela 1
+	if (num_tela == 1) {
+		// retangulo azul
+		float dist_parede = SCREEN_W/4.0;
+		float largura = SCREEN_W/6.0;
+		float dist_teto = (5*SCREEN_H/6.0 - 4*SCREEN_H/6.0)/1.5; 
+		float altura = 5*SCREEN_H/6.0;
+		al_draw_filled_rectangle(0 + dist_parede, 4*SCREEN_H/6.0 + dist_teto, dist_parede + largura, altura, al_map_rgb(80,112,188));
+		al_draw_filled_rectangle(SCREEN_W - dist_parede, 4*SCREEN_H/6.0 + dist_teto, SCREEN_W - dist_parede - largura, altura, al_map_rgb(80,112,188));
+	}
+
 }
 // --------------------------------------------------------------------------------------------
  
@@ -50,6 +86,12 @@ int main(int argc, char **argv){
 		fprintf(stderr, "failed to initialize image module!\n");
 		return -1;
 	}
+
+	// -------------------------------------------------------------------------------
+	// criado por mim
+	// inicializar imagens usadas no game:
+	ALLEGRO_BITMAP *imagem_cidade = al_load_bitmap("../../imagens_cenario/cidade.png");
+	// -------------------------------------------------------------------------------
 
 	//inicializa o modulo allegro que carrega as fontes
 	al_init_font_addon();
@@ -131,7 +173,8 @@ int main(int argc, char **argv){
 			//aplica fisica
 
 			//desenha
-			desenhar_cenario();
+			int num_tela = 1;
+			desenhar_cenario(num_tela, imagem_cidade);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -161,7 +204,9 @@ int main(int argc, char **argv){
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
 	al_destroy_font(font);
-   
+	// criado por mim ----------------------------------------------
+	al_destroy_bitmap(imagem_cidade); // Libera a memória da imagem
+	// -------------------------------------------------------------
  
 	return 0;
 }
