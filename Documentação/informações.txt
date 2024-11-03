@@ -3,3 +3,6 @@ https://oldmaguspub.blogspot.com/2016/11/analise-28-keystone-kapers-atari-2600.h
 
 site para jogar o jogo:
 https://www.retrogames.cz/play_097-Atari2600.php
+
+talvez um lugar para conseguir os sprites
+https://github.com/tonysavon/Keystone-Kapers-C64/tree/master/sprites
