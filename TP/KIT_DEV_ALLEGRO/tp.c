@@ -58,6 +58,13 @@ void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
 	}
 
 }
+
+void desenhar_personagens(ALLEGRO_BITMAP *imagem_kelly_keystone) {
+	// imagem do personagem principal
+	int largura_personagem = al_get_bitmap_width(imagem_kelly_keystone);
+    //int altura_personage = al_get_bitmap_height(imagem_kelly_keystone);
+	al_draw_bitmap(imagem_kelly_keystone, SCREEN_W/2 - largura_personagem/2 , 4*SCREEN_H/6.0 + 50, 0);
+}
 // --------------------------------------------------------------------------------------------
  
 int main(int argc, char **argv){
@@ -89,8 +96,22 @@ int main(int argc, char **argv){
 
 	// -------------------------------------------------------------------------------
 	// criado por mim
+
 	// inicializar imagens usadas no game:
+
+	// imagem do  cidade ao fundo
 	ALLEGRO_BITMAP *imagem_cidade = al_load_bitmap("../../imagens_cenario/cidade.png");
+	if (!imagem_cidade) {
+        fprintf(stderr, "Falha ao carregar a imagem da cidade!\n");
+       return -1;
+    }
+
+	// imagem do  Kelly Keystone (personagem principal)
+	ALLEGRO_BITMAP *imagem_kelly_keystone = al_load_bitmap("../../imagens_personagens/kelly_keystone_pos_inicial.png");
+	if (!imagem_kelly_keystone) {
+        fprintf(stderr, "Falha ao carregar a imagem do kelly keystone!\n");
+        return -1;
+    }
 	// -------------------------------------------------------------------------------
 
 	//inicializa o modulo allegro que carrega as fontes
@@ -173,8 +194,11 @@ int main(int argc, char **argv){
 			//aplica fisica
 
 			//desenha
+			// criado por mim -------------------------------------------
 			int num_tela = 1;
 			desenhar_cenario(num_tela, imagem_cidade);
+			desenhar_personagens(imagem_kelly_keystone);
+			//-----------------------------------------------------------
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -205,7 +229,9 @@ int main(int argc, char **argv){
 	al_destroy_event_queue(event_queue);
 	al_destroy_font(font);
 	// criado por mim ----------------------------------------------
-	al_destroy_bitmap(imagem_cidade); // Libera a memória da imagem
+	// Libera a memória da imagem
+	al_destroy_bitmap(imagem_cidade);
+	al_destroy_bitmap(imagem_kelly_keystone);
 	// -------------------------------------------------------------
  
 	return 0;
