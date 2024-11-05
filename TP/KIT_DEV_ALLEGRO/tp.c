@@ -16,6 +16,12 @@ const int SCREEN_H = 690; // valor original do professor: 540
 // --------------------------------------------------------------------------------------------
 // funções criadas por mim:
 
+void verificar_teclas_pressionadas(ALLEGRO_EVENT ev) {
+	if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE) {
+		//printf("\napertou: %d = espaco", ev.keyboard.keycode);
+	}
+}
+
 void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
@@ -192,6 +198,7 @@ int main(int argc, char **argv){
 			al_clear_to_color(al_map_rgb(0,0,0));
 
 			//aplica fisica
+			//atualizar_posicao_personagens(imagem);
 
 			//desenha
 			// criado por mim -------------------------------------------
@@ -217,6 +224,10 @@ int main(int argc, char **argv){
 		else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) { 
 			//imprime qual tecla foi
 			printf("\ncodigo tecla: %d", ev.keyboard.keycode);
+
+			// criado por mim -------------------------------------------
+			verificar_teclas_pressionadas(ev);
+			//-----------------------------------------------------------
 		}
 
 	} //fim do while
