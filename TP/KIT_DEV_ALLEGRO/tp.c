@@ -40,23 +40,13 @@ void aplicar_fisica(float y_personagem, float y_chao, int *pode_cair, float altu
 	}
 }
 
-void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular) {
+void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular, float altura_personagem) {
 	// mechendo de acordo com as teclas
+	// subir, descer
 	if (*espaco == 1) {
 		*espaco = 0; // para não possibilitar pulo duplo ou contínuo
 		*pode_pular = 1;
 	}
-	// não pode andar enquanto pula
-	if (*seta_esquerda == 1) { 
-		*x_personagem -= 5.0;
-		*orientacao_personagem = 1;
-	}
-	if (*seta_direita == 1) {
-		*x_personagem += 5.0;
-		*orientacao_personagem = 0;
-	}
-
-	// subir, descer
 	if (*pode_pular == 1){
 		*y_personagem -= 3;
 	}
@@ -65,20 +55,27 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 		*pode_pular = 0; // se pode cair, quer dizer que não pode subir mais
 	}
 
+	// Andando
+	if (*seta_esquerda == 1 && *pode_pular == 0 && pode_cair == 0) { 
+		*x_personagem -= 5.0;
+		*orientacao_personagem = 1;
+	}
+	if (*seta_direita == 1 && *pode_pular == 0 && pode_cair == 0) {
+		*x_personagem += 5.0;
+		*orientacao_personagem = 0;
+	}
 	// subindo de andar se chegar no fim da tela esquerda
 	if (*x_personagem + largura_personagem <= 0) {
 		*x_personagem = SCREEN_W - largura_personagem;
 		*y_personagem -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
-		*y_chao = *y_personagem; // atualiza o chão
+		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
 	}
 	// descendo de andar se chegar no fim da tela direita
 	else if (*x_personagem >= SCREEN_W) {
 		*x_personagem = 0;
 		*y_personagem +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
-		*y_chao = *y_personagem; // atualiza o chão
+		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
 	}
-
-	// ainda não coloquei as colisões e proibições de subir ou descer
 }
 
 void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
@@ -281,7 +278,7 @@ int main(int argc, char **argv){
 
 			// criado por mim -------------------------------------------
 			//atualiza posicões personagens
-			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular);
+			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem);
 			//-----------------------------------------------------------
 
 			//desenha
