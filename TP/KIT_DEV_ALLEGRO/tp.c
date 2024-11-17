@@ -40,18 +40,30 @@ void aplicar_fisica(float y_personagem, float y_chao, int *pode_cair, float altu
 	}
 }
 
-void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular, float altura_personagem) {
+void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular, float altura_personagem, float *direcao_pulo) {
+
 	// mechendo de acordo com as teclas
 	// subir, descer
 	if (*espaco == 1) {
 		*espaco = 0; // para não possibilitar pulo duplo ou contínuo
 		*pode_pular = 1;
+		if (*seta_esquerda == 1) {
+			*direcao_pulo = -5.0;
+		}
+		else if (*seta_direita == 1) {
+			*direcao_pulo = 5.0;
+		}
+		else {
+			*direcao_pulo = 0.0;
+		}
 	}
 	if (*pode_pular == 1){
 		*y_personagem -= 3;
+		*x_personagem += *direcao_pulo;
 	}
 	if (pode_cair == 1) {
 		*y_personagem += gravidade;
+		*x_personagem += *direcao_pulo;
 		*pode_pular = 0; // se pode cair, quer dizer que não pode subir mais
 	}
 
@@ -253,6 +265,7 @@ int main(int argc, char **argv){
 	float y_chao = y_personagem + altura_personagem; // posição inicial
 	int pode_cair = 0;
 	int pode_pular = 0;
+	float direcao_pulo = 0.0;
 	// ----------------------------------------------------------
 
 	//inicia o temporizador
@@ -278,7 +291,7 @@ int main(int argc, char **argv){
 
 			// criado por mim -------------------------------------------
 			//atualiza posicões personagens
-			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem);
+			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem, &direcao_pulo);
 			//-----------------------------------------------------------
 
 			//desenha
