@@ -47,6 +47,7 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 	if (*espaco == 1) {
 		*espaco = 0; // para não possibilitar pulo duplo ou contínuo
 		*pode_pular = 1;
+		// decidindo pra que lado vai pular
 		if (*seta_esquerda == 1) {
 			*direcao_pulo = -5.0;
 		}
@@ -59,15 +60,17 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 	}
 	if (*pode_pular == 1){
 		*y_personagem -= 3;
-		*x_personagem += *direcao_pulo;
+		*x_personagem += *direcao_pulo; // ele vai ir pro lado da direção do pulo.
+										// isso não é andar, é cair com estilo
 	}
 	if (pode_cair == 1) {
 		*y_personagem += gravidade;
-		*x_personagem += *direcao_pulo;
+		*x_personagem += *direcao_pulo;// ele vai ir pro lado da direção do pulo.
+										// isso não é andar, é cair com estilo
 		*pode_pular = 0; // se pode cair, quer dizer que não pode subir mais
 	}
 
-	// Andando
+	// Andando -- se tiver pulando ou caindo, não pode andar
 	if (*seta_esquerda == 1 && *pode_pular == 0 && pode_cair == 0) { 
 		*x_personagem -= 5.0;
 		*orientacao_personagem = 1;
@@ -79,12 +82,24 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 	// subindo de andar se chegar no fim da tela esquerda
 	if (*x_personagem + largura_personagem <= 0) {
 		*x_personagem = SCREEN_W - largura_personagem;
+
+		// gruda o personagem no chão pra ele não sair voando
+		if (*y_personagem + altura_personagem < *y_chao) {
+			*y_personagem  = *y_chao - altura_personagem;
+		}
+
 		*y_personagem -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
 		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
 	}
 	// descendo de andar se chegar no fim da tela direita
 	else if (*x_personagem >= SCREEN_W) {
 		*x_personagem = 0;
+
+		// gruda o personagem no chão pra ele não sair voando
+		if (*y_personagem + altura_personagem < *y_chao) {
+			*y_personagem  = *y_chao - altura_personagem;
+		}
+
 		*y_personagem +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
 		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
 	}
@@ -261,7 +276,7 @@ int main(int argc, char **argv){
 	int orientacao_personagem = 0; // virado pra direita
 
 	// variáveis para física
-	float gravidade = 2.0;
+	float gravidade = 3.0;
 	float y_chao = y_personagem + altura_personagem; // posição inicial
 	int pode_cair = 0;
 	int pode_pular = 0;
