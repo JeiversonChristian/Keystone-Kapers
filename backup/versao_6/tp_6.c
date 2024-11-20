@@ -9,11 +9,9 @@
 
 const float FPS = 60;  
 
-// criado por mim------------------------------------------------------------------------------
 // Dimensão 4:3 -> 4x230 = 920 e 3x230 = 690
 const int SCREEN_W = 920; // valor original do professor: 960
 const int SCREEN_H = 690; // valor original do professor: 540
-//--------------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------------
 // funções criadas por mim:
@@ -152,10 +150,7 @@ void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
 
 void desenhar_personagem_principal(ALLEGRO_BITMAP *imagem_kelly_keystone, float x_personagem, float y_personagem, int *orientacao_personagem) {
 	al_draw_bitmap(imagem_kelly_keystone, x_personagem , y_personagem, *orientacao_personagem);
-}
-
-void desenhar_antagonista(ALLEGRO_BITMAP *imagem_harry_hooligan, float x_antagonista, float y_antagonista, int *orientacao_antagonista){
-	al_draw_bitmap(imagem_harry_hooligan, x_antagonista , y_antagonista, *orientacao_antagonista);
+	// o zero no final se refere à orientação do personagem
 }
 // --------------------------------------------------------------------------------------------
  
@@ -202,13 +197,6 @@ int main(int argc, char **argv){
 	ALLEGRO_BITMAP *imagem_kelly_keystone = al_load_bitmap("../../imagens_personagens/kelly_keystone_pos_inicial.png");
 	if (!imagem_kelly_keystone) {
         fprintf(stderr, "Falha ao carregar a imagem do kelly keystone!\n");
-        return -1;
-    }
-
-	// imagem do harry hooligan (bandido)
-	ALLEGRO_BITMAP *imagem_harry_hooligan = al_load_bitmap("../../imagens_personagens/harry_hooligan_pos_inicial.png");
-	if (!imagem_harry_hooligan) {
-        fprintf(stderr, "Falha ao carregar a imagem do harry hooligan!\n");
         return -1;
     }
 	// -------------------------------------------------------------------------------
@@ -280,19 +268,12 @@ int main(int argc, char **argv){
 	int seta_direita;
 	int seta_esquerda;
 
-	// variáveis do personagem principal
+	// variáveis do personagem
 	float largura_personagem = al_get_bitmap_width(imagem_kelly_keystone);
 	float altura_personagem = al_get_bitmap_height(imagem_kelly_keystone);
 	float x_personagem = SCREEN_W/2 - largura_personagem/2;
 	float y_personagem = 4*SCREEN_H/6.0 + 50;
 	int orientacao_personagem = 0; // virado pra direita
-
-	// variáveis do antagonista
-	float largura_antagonista = al_get_bitmap_width(imagem_harry_hooligan);
-	float altura_antagonista = al_get_bitmap_height(imagem_harry_hooligan);
-	float x_antagonista = 0 - largura_antagonista + 50;
-	float y_antagonista = 3*SCREEN_H/6.0 + 50;
-	int orientacao_antagonista = 0; // virado pra direita
 
 	// variáveis para física
 	float gravidade = 3.0;
@@ -333,7 +314,6 @@ int main(int argc, char **argv){
 			int num_tela = 1;
 			desenhar_cenario(num_tela, imagem_cidade);
 			desenhar_personagem_principal(imagem_kelly_keystone, x_personagem, y_personagem, &orientacao_personagem);
-			desenhar_antagonista(imagem_harry_hooligan, x_antagonista, y_antagonista, &orientacao_antagonista);
 			//-----------------------------------------------------------
 
 			//atualiza a tela (quando houver algo para mostrar)
@@ -377,7 +357,6 @@ int main(int argc, char **argv){
 	// Libera a memória da imagem
 	al_destroy_bitmap(imagem_cidade);
 	al_destroy_bitmap(imagem_kelly_keystone);
-	al_destroy_bitmap(imagem_harry_hooligan);
 	// -------------------------------------------------------------
  
 	return 0;
