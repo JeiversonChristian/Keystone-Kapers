@@ -42,7 +42,7 @@ void aplicar_fisica(float y_personagem, float y_chao, int *pode_cair, float altu
 	}
 }
 
-void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular, float altura_personagem, float *direcao_pulo) {
+void atualizar_posicao_personagem_principal(float *x_personagem, float *y_personagem, int *espaco, int *seta_direita, int *seta_esquerda, int *orientacao_personagem, float largura_personagem, float *y_chao, int pode_cair, float gravidade, int *pode_pular, float altura_personagem, float *direcao_pulo, float velocidade_personagem, int *andar_personagem) {
 
 	// mechendo de acordo com as teclas
 	// subir, descer
@@ -51,10 +51,10 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 		*pode_pular = 1;
 		// decidindo pra que lado vai pular
 		if (*seta_esquerda == 1) {
-			*direcao_pulo = -5.0;
+			*direcao_pulo = -velocidade_personagem; // pra pular pro lado esquerdo com a velocidade dele
 		}
 		else if (*seta_direita == 1) {
-			*direcao_pulo = 5.0;
+			*direcao_pulo = velocidade_personagem;
 		}
 		else {
 			*direcao_pulo = 0.0;
@@ -74,11 +74,11 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 
 	// Andando -- se tiver pulando ou caindo, não pode andar
 	if (*seta_esquerda == 1 && *pode_pular == 0 && pode_cair == 0) { 
-		*x_personagem -= 5.0;
+		*x_personagem -= velocidade_personagem;
 		*orientacao_personagem = 1;
 	}
 	if (*seta_direita == 1 && *pode_pular == 0 && pode_cair == 0) {
-		*x_personagem += 5.0;
+		*x_personagem += velocidade_personagem;
 		*orientacao_personagem = 0;
 	}
 	// subindo de andar se chegar no fim da tela esquerda
@@ -91,6 +91,7 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 		}
 
 		*y_personagem -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		*andar_personagem += 1;
 		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
 	}
 	// descendo de andar se chegar no fim da tela direita
@@ -103,7 +104,38 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 		}
 
 		*y_personagem +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		*andar_personagem -= 1;
 		*y_chao = *y_personagem + altura_personagem; // atualiza o chão
+	}
+}
+
+void atualizar_posicao_antagonista(float *x_antagonista, float *y_antagonista, int *orientacao_antagonista,  float largura_antagonista, float *y_chao_antagonista, float altura_antagonista, float velocidade_antagonista, int *andar_antagonista) {
+
+	int direcao_andar;
+	// vireado pra direita
+	if (*orientacao_antagonista == 0){
+		direcao_andar = 1; // andar pra direita
+	}
+	// vireado pra esquerda
+	else if (*orientacao_antagonista == 1){
+		direcao_andar = -1; // andar pra esquerda
+	}
+
+	*x_antagonista += velocidade_antagonista * direcao_andar;
+
+	// subindo de andar se chegar no fim da tela esquerda
+	if (*x_antagonista + largura_antagonista <= 0) {
+		*x_antagonista = SCREEN_W - largura_antagonista;
+		*y_antagonista -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		*andar_antagonista += 1;
+		*y_chao_antagonista = *y_antagonista + altura_antagonista; // atualiza o chão
+	}
+	// descendo de andar se chegar no fim da tela direita
+	else if (*x_antagonista >= SCREEN_W) {
+		*x_antagonista = 0;
+		*y_antagonista +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		*andar_antagonista -= 1;
+		*y_chao_antagonista = *y_antagonista + altura_antagonista; // atualiza o chão
 	}
 }
 
@@ -286,17 +318,22 @@ int main(int argc, char **argv){
 	float x_personagem = SCREEN_W/2 - largura_personagem/2;
 	float y_personagem = 4*SCREEN_H/6.0 + 50;
 	int orientacao_personagem = 0; // virado pra direita
+	int andar_personagem = 0;
+	float velocidade_personagem = 5.0;
 
 	// variáveis do antagonista
 	float largura_antagonista = al_get_bitmap_width(imagem_harry_hooligan);
 	float altura_antagonista = al_get_bitmap_height(imagem_harry_hooligan);
-	float x_antagonista = 0 - largura_antagonista + 50;
+	float x_antagonista = SCREEN_W;
 	float y_antagonista = 3*SCREEN_H/6.0 + 50;
-	int orientacao_antagonista = 0; // virado pra direita
+	int orientacao_antagonista = 1; // virado pra esquerda
+	int andar_antagonista = 1;
+	float velocidade_antagonista = 3.0;
 
 	// variáveis para física
 	float gravidade = 3.0;
 	float y_chao = y_personagem + altura_personagem; // posição inicial
+	float y_chao_antagonista = y_antagonista + altura_antagonista;
 	int pode_cair = 0;
 	int pode_pular = 0;
 	float direcao_pulo = 0.0;
@@ -325,7 +362,8 @@ int main(int argc, char **argv){
 
 			// criado por mim -------------------------------------------
 			//atualiza posicões personagens
-			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem, &direcao_pulo);
+			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem, &direcao_pulo, velocidade_personagem, &andar_personagem);
+			atualizar_posicao_antagonista(&x_antagonista, &y_antagonista, &orientacao_antagonista,  largura_antagonista, &y_chao_antagonista, altura_antagonista, velocidade_antagonista, &andar_antagonista);
 			//-----------------------------------------------------------
 
 			//desenha
