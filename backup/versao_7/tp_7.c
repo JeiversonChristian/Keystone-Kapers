@@ -111,7 +111,6 @@ void atualizar_posicao_personagem_principal(float *x_personagem, float *y_person
 
 void atualizar_posicao_antagonista(float *x_antagonista, float *y_antagonista, int *orientacao_antagonista,  float largura_antagonista, float *y_chao_antagonista, float altura_antagonista, float velocidade_antagonista, int *andar_antagonista, float x_personagem, float y_personagem) {
 
-	// pegue o pombo...
 	if (x_personagem < *x_antagonista && y_personagem <= *y_antagonista){
 		*orientacao_antagonista = 0; // fugir pra direita
 	}
