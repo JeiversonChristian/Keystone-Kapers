@@ -156,10 +156,13 @@ void atualizar_posicao_antagonista(float *x_antagonista, float *y_antagonista, i
 	}
 }
 
-void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade) {
+void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_fundo_elevador, float y_elevador) {
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
+
+	// elevador
+	al_draw_bitmap(imagem_fundo_elevador, X0_ELEVADOR , y_elevador, 0);
 
 	// retângulos de fundo de todas as telas
 
@@ -255,6 +258,18 @@ int main(int argc, char **argv){
 	ALLEGRO_BITMAP *imagem_cidade = al_load_bitmap("../../imagens_cenario/cidade.png");
 	if (!imagem_cidade) {
         fprintf(stderr, "Falha ao carregar a imagem da cidade!\n");
+       return -1;
+    }
+
+	// imagem do elevador
+	ALLEGRO_BITMAP *imagem_fundo_elevador = al_load_bitmap("../../imagens_cenario/elevador_fundo.png");
+	if (!imagem_fundo_elevador) {
+        fprintf(stderr, "Falha ao carregar a imagem do fundo do elevador!\n");
+       return -1;
+    }
+	ALLEGRO_BITMAP *imagem_porta_elevador = al_load_bitmap("../../imagens_cenario/elevador_porta.png");
+	if (!imagem_porta_elevador) {
+        fprintf(stderr, "Falha ao carregar a imagem da porto do elevador!\n");
        return -1;
     }
 
@@ -365,6 +380,9 @@ int main(int argc, char **argv){
 	int pode_cair = 0;
 	int pode_pular = 0;
 	float direcao_pulo = 0.0;
+
+	// variáveis elevador
+	float y_elevador = 4*SCREEN_H/6.0 + 22.130;
 	// ----------------------------------------------------------
 
 	//inicia o temporizador
@@ -397,7 +415,7 @@ int main(int argc, char **argv){
 			//desenha
 			// criado por mim -------------------------------------------
 			int num_tela = 1;
-			desenhar_cenario(num_tela, imagem_cidade);
+			desenhar_cenario(num_tela, imagem_cidade, imagem_fundo_elevador, y_elevador);
 			desenhar_personagem_principal(imagem_kelly_keystone, x_personagem, y_personagem, &orientacao_personagem);
 			desenhar_antagonista(imagem_harry_hooligan, x_antagonista, y_antagonista, &orientacao_antagonista);
 			//-----------------------------------------------------------
@@ -444,6 +462,8 @@ int main(int argc, char **argv){
 	al_destroy_bitmap(imagem_cidade);
 	al_destroy_bitmap(imagem_kelly_keystone);
 	al_destroy_bitmap(imagem_harry_hooligan);
+	al_destroy_bitmap(imagem_fundo_elevador);
+	al_destroy_bitmap(imagem_porta_elevador);
 	// -------------------------------------------------------------
  
 	return 0;
