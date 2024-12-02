@@ -156,40 +156,7 @@ void atualizar_posicao_antagonista(float *x_antagonista, float *y_antagonista, i
 	}
 }
 
-void atualizar_posicao_elevador(float *x_porta_elevador, float *y_porta_elevador, int *elevador_fechado, int *elevador_aberto, float vel_porta, float *tempo_decorrido_elevador_aberto, float *tempo_decorrido_elevador_fechado,float tempo_espera_elevador){
-	// se a porta do elevador chegar no local reservado para ela
-	if (*x_porta_elevador <= X0_ELEVADOR){
-		*elevador_fechado = 0;
-		*elevador_aberto = 1;
-		*tempo_decorrido_elevador_fechado = 0.0;
-	}
-
-	// se a porta do elevador sair de vista
-	else if(*x_porta_elevador > XF_ELEVADOR){
-		*elevador_fechado = 1;
-		*elevador_aberto = 0;
-		*tempo_decorrido_elevador_aberto = 0.0;
-	}
-
-	if (*elevador_fechado == 1){
-		*tempo_decorrido_elevador_fechado += 1.0 / FPS; 
-		if (*tempo_decorrido_elevador_fechado >= tempo_espera_elevador){
-			*x_porta_elevador -= vel_porta;
-			// para não passar da porta
-			if(*x_porta_elevador < X0_ELEVADOR){
-				*x_porta_elevador = X0_ELEVADOR;
-			}
-		}
-	}
-	else if (*elevador_aberto == 1){
-		*tempo_decorrido_elevador_aberto += 1.0 / FPS;
-		if (*tempo_decorrido_elevador_aberto >= tempo_espera_elevador){
-			*x_porta_elevador += vel_porta;
-		}
-	}
-}
-
-void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_fundo_elevador, float y_elevador, ALLEGRO_BITMAP * imagem_porta_elevador, float x_porta_elevador) {
+void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_fundo_elevador, float y_elevador) {
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
@@ -202,9 +169,6 @@ void desenhar_cenario(int num_tela, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMA
 	al_draw_bitmap(imagem_fundo_elevador, X0_ELEVADOR , 2*SCREEN_H/6.0 + 2*largura, 0);
 	al_draw_bitmap(imagem_fundo_elevador, X0_ELEVADOR , 3*SCREEN_H/6.0 + 2*largura, 0);
 	al_draw_bitmap(imagem_fundo_elevador, X0_ELEVADOR , 4*SCREEN_H/6.0 + 2*largura, 0);
-
-	// porta
-	al_draw_bitmap(imagem_porta_elevador, x_porta_elevador , y_elevador, 0);
 
 	// retângulos de fundo de todas as telas
 
@@ -403,7 +367,7 @@ int main(int argc, char **argv){
 	float y_personagem = 4*SCREEN_H/6.0 + 50;
 	int orientacao_personagem = 0; // virado pra direita
 	int andar_personagem = 0;
-	float velocidade_personagem = 3.0;
+	float velocidade_personagem = 5.0;
 
 	// variáveis do antagonista
 	float largura_antagonista = al_get_bitmap_width(imagem_harry_hooligan);
@@ -412,7 +376,7 @@ int main(int argc, char **argv){
 	float y_antagonista = 3*SCREEN_H/6.0 + 50;
 	int orientacao_antagonista = 1; // virado pra esquerda
 	int andar_antagonista = 1;
-	float velocidade_antagonista = 2.0;
+	float velocidade_antagonista = 3.0;
 
 	// variáveis para física
 	float gravidade = 3.0;
@@ -424,14 +388,6 @@ int main(int argc, char **argv){
 
 	// variáveis elevador
 	float y_elevador = 4*SCREEN_H/6.0 + 22.130;
-	float x_porta_elevador = XF_ELEVADOR;
-	float y_porta_elevador = y_elevador;
-	float tempo_espera_elevador = 1.5;
-	float tempo_decorrido_elevador_aberto = 0.0;
-	float tempo_decorrido_elevador_fechado = 0.0;
-	int elevador_fechado = 1;
-	int elevador_aberto = 0;
-	float vel_porta = (XF_ELEVADOR - X0_ELEVADOR)/9;
 	// ----------------------------------------------------------
 
 	//inicia o temporizador
@@ -459,14 +415,12 @@ int main(int argc, char **argv){
 			//atualiza posicões personagens
 			atualizar_posicao_personagem_principal(&x_personagem, &y_personagem, &espaco, &seta_direita, &seta_esquerda, &orientacao_personagem, largura_personagem, &y_chao, pode_cair, gravidade,  &pode_pular, altura_personagem, &direcao_pulo, velocidade_personagem, &andar_personagem);
 			atualizar_posicao_antagonista(&x_antagonista, &y_antagonista, &orientacao_antagonista,  largura_antagonista, &y_chao_antagonista, altura_antagonista, velocidade_antagonista, &andar_antagonista, x_personagem, y_personagem);
-			//autaliza objetos cenário
-			atualizar_posicao_elevador(&x_porta_elevador, &y_porta_elevador, &elevador_fechado, &elevador_aberto, vel_porta, &tempo_decorrido_elevador_aberto, &tempo_decorrido_elevador_fechado, tempo_espera_elevador);
 			//-----------------------------------------------------------
 
 			//desenha
 			// criado por mim -------------------------------------------
 			int num_tela = 1;
-			desenhar_cenario(num_tela, imagem_cidade, imagem_fundo_elevador, y_elevador, imagem_porta_elevador, x_porta_elevador);
+			desenhar_cenario(num_tela, imagem_cidade, imagem_fundo_elevador, y_elevador);
 			desenhar_personagem_principal(imagem_kelly_keystone, x_personagem, y_personagem, &orientacao_personagem);
 			desenhar_antagonista(imagem_harry_hooligan, x_antagonista, y_antagonista, &orientacao_antagonista);
 			//-----------------------------------------------------------
