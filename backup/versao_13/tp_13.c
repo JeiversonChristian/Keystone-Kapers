@@ -37,6 +37,7 @@ typedef struct Personagem{
 	int pulando; // variável de controle
 	float y_chao; // altura do chão onde se encontra
 	int num_tela; // cada cenário tem várias telas
+	int subir_descer; // para decidir se vai subir ou descer
 }Personagem;
 
 typedef struct Mundo{
@@ -68,37 +69,39 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).imagem = imagem_policial;
 	(*policial).largura = al_get_bitmap_width(imagem_policial);
 	(*policial).altura = al_get_bitmap_height(imagem_policial);
-	(*policial).x = SCREEN_W/2 - (*policial).largura/2; // no meio da tela
+	(*policial).x = SCREEN_W/2 - (*policial).largura/2; // no meio da sala (tela)
 	(*policial).x_global = 3*SCREEN_W + (*policial).x; // quase no final já
 	(*policial).y = 5*SCREEN_H/6.0 - (*policial).altura; // no primeiro andar
 	(*policial).vx = 5.0; // ligeiramente mais rápido que o ladrão
 	(*policial).vy = 50.0; // valor alto, porque a lógica do pulo é outra
 	(*policial).direcao_pulo = 0.0; // pulando em nenhuma direção
-	(*policial).orientacao = 0; // virado pra direita
+	(*policial).orientacao = 1; // virado pra esquerda
 	(*policial).andar = 1; // primeiro andar
 	(*policial).pode_pular = 1; // sim
 	(*policial).pulando = 0; // não
 	(*policial).pode_andar = 1; // sim
 	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
 	(*policial).num_tela = 1; // tela que o jogador vê
+	(*policial).subir_descer = -1; // não se aplica
 
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
 	(*ladrao).largura = al_get_bitmap_width(imagem_ladrao);
 	(*ladrao).altura = al_get_bitmap_height(imagem_ladrao);
-	(*ladrao).x = (*policial).x - 3*(*ladrao).largura; // um pouco longe do policial
-	(*ladrao).x_global = 3*SCREEN_W + (*ladrao).x; // quase no final já
-	(*ladrao).y = 5*SCREEN_H/6.0 - (*ladrao).altura; // mesmo andar que o policial
+	(*ladrao).x = SCREEN_W/2 - (*ladrao).largura/2;; // no meio do andar
+	(*ladrao).x_global = 3*SCREEN_W + (*ladrao).x; // na segunda sala (tela)
+	(*ladrao).y = 4*SCREEN_H/6.0 - (*ladrao).altura; // andar do meio
 	(*ladrao).vx = 3.0; // ligeiramente mais lento que o policial
 	(*policial).vy = 0; // pra não pular mesmo
 	(*ladrao).direcao_pulo = 0.0; // pulando em nenhuma direção
-	(*ladrao).orientacao = 1; // virado pra esquerda
+	(*ladrao).orientacao = 0; // virado pra direita
 	(*ladrao).andar = 2; // acima do policial
 	(*ladrao).pode_pular = 1; // sim, mas não sei se ele vai pular ainda
 	(*ladrao).pulando = 0; //não
 	(*ladrao).pode_andar = 1; // sim
 	(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // y do chão abaixo do ladrão
 	(*ladrao).num_tela = 1; // tela que o bandido "vê"
+	(*ladrao).subir_descer = 0; // começa querendo subir
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
@@ -107,20 +110,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
-	// mudar de tela
-	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
-		(*policial).num_tela = 1;
-	}
-	else if ((*policial).x_global >= 2*SCREEN_W && (*policial).x_global < 3*SCREEN_W){
-		(*policial).num_tela = 2;
-	}
-	else if ((*policial).x_global >= 1*SCREEN_W && (*policial).x_global < 2*SCREEN_W){
-		(*policial).num_tela = 3;
-	}
-	else if ((*policial).x_global >= 0*SCREEN_W && (*policial).x_global < 1*SCREEN_W){
-		(*policial).num_tela = 4;
-	}
-	
 	// andar para esquerda
 	if (teclas.a == 1 && teclas.d == 0 && (*policial).pode_andar == 1){
 		(*policial).orientacao = 1; // orientação da imagem -> pra esquerda
@@ -188,18 +177,44 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		}
 	}
 
+	// mudar de tela
+	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
+		(*policial).num_tela = 1;
+	}
+	else if ((*policial).x_global >= 2*SCREEN_W && (*policial).x_global < 3*SCREEN_W){
+		(*policial).num_tela = 2;
+	}
+	else if ((*policial).x_global >= 1*SCREEN_W && (*policial).x_global < 2*SCREEN_W){
+		(*policial).num_tela = 3;
+	}
+	else if ((*policial).x_global >= 0*SCREEN_W && (*policial).x_global < 1*SCREEN_W){
+		(*policial).num_tela = 4;
+	}
 }
 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
-
 	// foge ladrão
 	// o policial tiver na frente do ladrão, ele foge pro outro lado
-	if (policial.x < (*ladrao).x && policial.y <= (*ladrao).y){
+	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar){
 		(*ladrao).orientacao = 0;
+		// se tava subindo, desce, ou vice-versa
+		if ((*ladrao).subir_descer == 0){
+			(*ladrao).subir_descer = 1;
+		}
+		else{
+			(*ladrao).subir_descer = 0;
+		}
 	}
-	else if (policial.x > (*ladrao).x && policial.y >= (*ladrao).y){
+	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar){
 		(*ladrao).orientacao = 1;
+		if ((*ladrao).subir_descer == 0){
+			(*ladrao).subir_descer = 1;
+		}
+		else{
+			(*ladrao).subir_descer = 0;
+		}
 	}
+
 	int direcao_andar;
 	if ((*ladrao).orientacao == 0){
 		direcao_andar = 1;
@@ -207,21 +222,52 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	else if ((*ladrao).orientacao == 1){
 		direcao_andar = -1;
 	}
-	(*ladrao).x += (*ladrao).vx * direcao_andar;
+	(*ladrao).x_global += (*ladrao).vx * direcao_andar;
+	(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
 
-	// subindo de andar se chegar no fim da tela esquerda
-	if ((*ladrao).x + (*ladrao).largura <= 0) {
-		(*ladrao).x = SCREEN_W - (*ladrao).largura;
-		(*ladrao).y -=  SCREEN_H/6.0; // altura de um andar
-		(*ladrao).andar += 1;
+	// mudando de andar ao se chegar na parede esquerda
+	if ((*ladrao).x_global + (*ladrao).largura <= 0) {
+		(*ladrao).x_global = 0;
+		(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+		(*ladrao).orientacao = 0; // vira pra direita
+		if ((*ladrao).subir_descer == 0){
+			(*ladrao).y -=  SCREEN_H/6.0; // sobe
+			(*ladrao).andar += 1;
+		}
+		else{
+			(*ladrao).y +=  SCREEN_H/6.0; // desce
+			(*ladrao).andar -= 1;
+		}
 		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
 	}
-	// descendo de andar se chegar no fim da tela direita
-	else if ((*ladrao).x >= SCREEN_W) {
-		(*ladrao).x = 0;
-		(*ladrao).y +=  SCREEN_H/6.0;
-		(*ladrao).andar -= 1;
+	// mudando de andar ao se chegar no fim da tela direita
+	else if ((*ladrao).x_global >= 4*SCREEN_W) {
+		(*ladrao).x_global = 4*SCREEN_W - (*ladrao).largura;;
+		(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+		(*ladrao).orientacao = 1; // vira pra esquerda
+		if ((*ladrao).subir_descer == 0){
+			(*ladrao).y -=  SCREEN_H/6.0; // sobe
+			(*ladrao).andar += 1;
+		}
+		else{
+			(*ladrao).y +=  SCREEN_H/6.0; // desce
+			(*ladrao).andar -= 1;
+		}
 		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
+	}
+
+	// mudar de tela
+	if ((*ladrao).x_global >= 3*SCREEN_W && (*ladrao).x_global < 4*SCREEN_W){
+		(*ladrao).num_tela = 1;
+	}
+	else if ((*ladrao).x_global >= 2*SCREEN_W && (*ladrao).x_global < 3*SCREEN_W){
+		(*ladrao).num_tela = 2;
+	}
+	else if ((*ladrao).x_global >= 1*SCREEN_W && (*ladrao).x_global < 2*SCREEN_W){
+		(*ladrao).num_tela = 3;
+	}
+	else if ((*ladrao).x_global >= 0*SCREEN_W && (*ladrao).x_global < 1*SCREEN_W){
+		(*ladrao).num_tela = 4;
 	}
 }
 
@@ -272,8 +318,10 @@ void desenhar_policial(Personagem policial) {
 	al_draw_bitmap(policial.imagem, policial.x , policial.y, policial.orientacao);
 }
 
-void desenhar_ladrao(Personagem ladrao) {
-	al_draw_bitmap(ladrao.imagem, ladrao.x , ladrao.y, ladrao.orientacao);
+void desenhar_ladrao(Personagem ladrao, Personagem policial) {
+	if (ladrao.num_tela == policial.num_tela){
+		al_draw_bitmap(ladrao.imagem, ladrao.x , ladrao.y, ladrao.orientacao);
+	}
 }
 
 void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado) {
@@ -445,7 +493,7 @@ int main(int argc, char **argv){
 			//desenha tudo
 			desenhar_cenario(mundo, policial);
 			desenhar_policial(policial);
-			desenhar_ladrao(ladrao);
+			desenhar_ladrao(ladrao, policial);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
