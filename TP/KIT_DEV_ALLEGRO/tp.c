@@ -107,20 +107,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
-	// mudar de tela
-	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
-		(*policial).num_tela = 1;
-	}
-	else if ((*policial).x_global >= 2*SCREEN_W && (*policial).x_global < 3*SCREEN_W){
-		(*policial).num_tela = 2;
-	}
-	else if ((*policial).x_global >= 1*SCREEN_W && (*policial).x_global < 2*SCREEN_W){
-		(*policial).num_tela = 3;
-	}
-	else if ((*policial).x_global >= 0*SCREEN_W && (*policial).x_global < 1*SCREEN_W){
-		(*policial).num_tela = 4;
-	}
-	
 	// andar para esquerda
 	if (teclas.a == 1 && teclas.d == 0 && (*policial).pode_andar == 1){
 		(*policial).orientacao = 1; // orientação da imagem -> pra esquerda
@@ -188,23 +174,22 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		}
 	}
 
+	// mudar de tela
+	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
+		(*policial).num_tela = 1;
+	}
+	else if ((*policial).x_global >= 2*SCREEN_W && (*policial).x_global < 3*SCREEN_W){
+		(*policial).num_tela = 2;
+	}
+	else if ((*policial).x_global >= 1*SCREEN_W && (*policial).x_global < 2*SCREEN_W){
+		(*policial).num_tela = 3;
+	}
+	else if ((*policial).x_global >= 0*SCREEN_W && (*policial).x_global < 1*SCREEN_W){
+		(*policial).num_tela = 4;
+	}
 }
 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
-	// mudar de tela
-	if ((*ladrao).x_global >= 3*SCREEN_W && (*ladrao).x_global <= 4*SCREEN_W){
-		(*ladrao).num_tela = 1;
-	}
-	else if ((*ladrao).x_global >= 2*SCREEN_W && (*ladrao).x_global < 3*SCREEN_W){
-		(*ladrao).num_tela = 2;
-	}
-	else if ((*ladrao).x_global >= 1*SCREEN_W && (*ladrao).x_global < 2*SCREEN_W){
-		(*ladrao).num_tela = 3;
-	}
-	else if ((*ladrao).x_global >= 0*SCREEN_W && (*ladrao).x_global < 1*SCREEN_W){
-		(*ladrao).num_tela = 4;
-	}
-
 	// foge ladrão
 	// o policial tiver na frente do ladrão, ele foge pro outro lado
 	if (policial.x_global < (*ladrao).x_global && policial.y <= (*ladrao).y){
@@ -238,6 +223,20 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 		(*ladrao).y +=  SCREEN_H/6.0;
 		(*ladrao).andar -= 1;
 		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
+	}
+
+	// mudar de tela
+	if ((*ladrao).x_global >= 3*SCREEN_W && (*ladrao).x_global <= 4*SCREEN_W){
+		(*ladrao).num_tela = 1;
+	}
+	else if ((*ladrao).x_global >= 2*SCREEN_W && (*ladrao).x_global < 3*SCREEN_W){
+		(*ladrao).num_tela = 2;
+	}
+	else if ((*ladrao).x_global >= 1*SCREEN_W && (*ladrao).x_global < 2*SCREEN_W){
+		(*ladrao).num_tela = 3;
+	}
+	else if ((*ladrao).x_global >= 0*SCREEN_W && (*ladrao).x_global < 1*SCREEN_W){
+		(*ladrao).num_tela = 4;
 	}
 }
 
