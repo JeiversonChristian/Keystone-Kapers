@@ -25,7 +25,6 @@ typedef struct Personagem{
 	float largura; // largura da imagem
 	float altura; // altura da imagem
 	float x; // coordenada do ponto de referência do retângulo que engloba a imagem
-	float x_global; // para controlar globalmente onde o personagem está
 	float y; // coordenada do ponto de referência do retângulo que engloba a imagem
 	float vx; // velocidade no eixo x
 	float vy; // velocidade no eixo y
@@ -36,12 +35,12 @@ typedef struct Personagem{
 	int pode_pular; // variável de controle
 	int pulando; // variável de controle
 	float y_chao; // altura do chão onde se encontra
-	int num_tela; // cada cenário tem várias telas
 }Personagem;
 
 typedef struct Mundo{
 	ALLEGRO_BITMAP *imagem_cidade;
 	float g; // gravidade
+	int num_tela; // cada cenário tem várias telas
 	float dt; // intervalo de tempo que passa no mundo
 }Mundo;
 // ---------------------------------------------------------------------------------------------------
@@ -69,10 +68,9 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).largura = al_get_bitmap_width(imagem_policial);
 	(*policial).altura = al_get_bitmap_height(imagem_policial);
 	(*policial).x = SCREEN_W/2 - (*policial).largura/2; // no meio da tela
-	(*policial).x_global = 3*SCREEN_W + (*policial).x; // quase no final já
 	(*policial).y = 5*SCREEN_H/6.0 - (*policial).altura; // no primeiro andar
 	(*policial).vx = 5.0; // ligeiramente mais rápido que o ladrão
-	(*policial).vy = 50.0; // valor alto, porque a lógica do pulo é outra
+	(*policial).vy = 3.0; // pular é mais difícil que andar pra frente
 	(*policial).direcao_pulo = 0.0; // pulando em nenhuma direção
 	(*policial).orientacao = 0; // virado pra direita
 	(*policial).andar = 1; // primeiro andar
@@ -80,17 +78,15 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).pulando = 0; // não
 	(*policial).pode_andar = 1; // sim
 	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
-	(*policial).num_tela = 1; // tela que o jogador vê
 
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
 	(*ladrao).largura = al_get_bitmap_width(imagem_ladrao);
 	(*ladrao).altura = al_get_bitmap_height(imagem_ladrao);
 	(*ladrao).x = (*policial).x - 3*(*ladrao).largura; // um pouco longe do policial
-	(*ladrao).x_global = 3*SCREEN_W + (*ladrao).x; // quase no final já
 	(*ladrao).y = 5*SCREEN_H/6.0 - (*ladrao).altura; // mesmo andar que o policial
-	(*ladrao).vx = 3.0; // ligeiramente mais lento que o policial
-	(*policial).vy = 0; // pra não pular mesmo
+	(*ladrao).vx = 3.5; // ligeiramente mais lento que o policial
+	(*policial).vy = 1.5; // pular é mais difícil que andar pra frente
 	(*ladrao).direcao_pulo = 0.0; // pulando em nenhuma direção
 	(*ladrao).orientacao = 1; // virado pra esquerda
 	(*ladrao).andar = 2; // acima do policial
@@ -98,65 +94,32 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).pulando = 0; //não
 	(*ladrao).pode_andar = 1; // sim
 	(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // y do chão abaixo do ladrão
-	(*ladrao).num_tela = 1; // tela que o bandido "vê"
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
-	(*mundo).g = 25.0; // valor alto, pra lógica do pulo
+	(*mundo).g = 25.0;
+	(*mundo).num_tela = 1;
 	(*mundo).dt = 5.0/FPS;
 }
 
-void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
-	// mudar de tela
-	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
-		(*policial).num_tela = 1;
-	}
-	else if ((*policial).x_global >= 2*SCREEN_W && (*policial).x_global < 3*SCREEN_W){
-		(*policial).num_tela = 2;
-	}
-	else if ((*policial).x_global >= 1*SCREEN_W && (*policial).x_global < 2*SCREEN_W){
-		(*policial).num_tela = 3;
-	}
-	else if ((*policial).x_global >= 0*SCREEN_W && (*policial).x_global < 1*SCREEN_W){
-		(*policial).num_tela = 4;
-	}
-	
+void atualizar_posicao_policial(Personagem *policial, Tecla teclas, Mundo mundo){
 	// andar para esquerda
 	if (teclas.a == 1 && teclas.d == 0 && (*policial).pode_andar == 1){
-		(*policial).orientacao = 1; // orientação da imagem -> pra esquerda
-		// não pode passar da parede do final lá da esquerda
-		if((*policial).x_global > 0) {
-			(*policial).x_global -= (*policial).vx;
-			(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		}
-		else {
-			// cola na parede
-			(*policial).x_global = 0;
-			(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		}
+		(*policial).x -= (*policial).vx;
+		(*policial).orientacao = 1;
 	}
 	// andar para direita
 	if (teclas.a == 0 && teclas.d == 1 && (*policial).pode_andar == 1){
-		(*policial).orientacao = 0; // orientação da imagem -> pra direita
-		// não pode passar da parede do começo da direita
-		if((*policial).x_global + (*policial).largura < 4*SCREEN_W){
-			(*policial).x_global += (*policial).vx;
-			(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		}
-		else {
-			// cola na parede
-			(*policial).x_global = 4*SCREEN_W - (*policial).largura;
-			(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		}
+		(*policial).x += (*policial).vx;
+		(*policial).orientacao = 0;
 	}
 
 	// pular
 	if (teclas.espaco == 1 && (*policial).pode_pular == 1){
-		(*policial).pode_andar = 0; // pra não andar pulando
-		(*policial).pode_pular = 0; // pra não pular duas ou mais vezes seguidas
-		(*policial).pulando = 1; // pra saber quando tá pulando
-		(*policial).vy = 50.0; // porque usa a fórmula da física, valor "experimental"
-		// decidindo pra que lado pula, ou se pula só pra cima
+		(*policial).pode_andar = 0;
+		(*policial).pode_pular = 0;
+		(*policial).pulando = 1;
+		(*policial).vy = 50.0;
 		if (teclas.a == 1) {
 			(*policial).direcao_pulo = -1.0;
 		}
@@ -168,20 +131,12 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		}
 	}
 	if ((*policial).pulando){
-		// subir, descer
-		(*policial).vy -= mundo.g * mundo.dt; // diminui a velocidade até zerar e "aumentar" depois
-		// decrementa ou incrementa a posicao, dependendo do sinal da velocidade
-		(*policial).y -= (*policial).vy * mundo.dt; 
-		// só pode pular para o lado se não passar das paredes
-		if((*policial).x_global > 0 && (*policial).x_global + (*policial).largura < 4*SCREEN_W){
-			(*policial).x_global += (*policial).vx * (*policial).direcao_pulo;
-			(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		}
-		// colando no chão
+		(*policial).vy -= mundo.g * mundo.dt;
+		(*policial).y -= (*policial).vy * mundo.dt;
+		(*policial).x += (*policial).vx * (*policial).direcao_pulo;
 		if ((*policial).y > (*policial).y_chao - (*policial).altura){
 			(*policial).y = (*policial).y_chao - (*policial).altura;
 			(*policial).vy = 0;
-			// resetando parâmetros
 			(*policial).pulando = 0;
 			(*policial).pode_pular = 1;
 			(*policial).pode_andar = 1;
@@ -192,40 +147,80 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 
-	// foge ladrão
-	// o policial tiver na frente do ladrão, ele foge pro outro lado
 	if (policial.x < (*ladrao).x && policial.y <= (*ladrao).y){
-		(*ladrao).orientacao = 0;
+		(*ladrao).orientacao = 0; // fugir pra direita
 	}
 	else if (policial.x > (*ladrao).x && policial.y >= (*ladrao).y){
-		(*ladrao).orientacao = 1;
+		(*ladrao).orientacao = 1; // fugir pra esquerda
 	}
+
 	int direcao_andar;
+	// vireado pra direita
 	if ((*ladrao).orientacao == 0){
-		direcao_andar = 1;
+		direcao_andar = 1; // andar pra direita
 	}
+	// vireado pra esquerda
 	else if ((*ladrao).orientacao == 1){
-		direcao_andar = -1;
+		direcao_andar = -1; // andar pra esquerda
 	}
+
 	(*ladrao).x += (*ladrao).vx * direcao_andar;
 
 	// subindo de andar se chegar no fim da tela esquerda
 	if ((*ladrao).x + (*ladrao).largura <= 0) {
 		(*ladrao).x = SCREEN_W - (*ladrao).largura;
-		(*ladrao).y -=  SCREEN_H/6.0; // altura de um andar
+		(*ladrao).y -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
 		(*ladrao).andar += 1;
-		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
+		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // atualiza o chão
 	}
 	// descendo de andar se chegar no fim da tela direita
 	else if ((*ladrao).x >= SCREEN_W) {
 		(*ladrao).x = 0;
-		(*ladrao).y +=  SCREEN_H/6.0;
+		(*ladrao).y +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
 		(*ladrao).andar -= 1;
-		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
+		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // atualiza o chão
 	}
 }
 
-void desenhar_cenario(Mundo mundo, Personagem policial) {
+
+void atualizar_posicao_antagonista(Personagem *ladrao, Personagem p_principal) {
+
+	if (p_principal.x < (*ladrao).x && p_principal.y <= (*ladrao).y){
+		(*ladrao).orientacao = 0; // fugir pra direita
+	}
+	else if (p_principal.x > (*ladrao).x && p_principal.y >= (*ladrao).y){
+		(*ladrao).orientacao = 1; // fugir pra esquerda
+	}
+
+	int direcao_andar;
+	// vireado pra direita
+	if ((*ladrao).orientacao == 0){
+		direcao_andar = 1; // andar pra direita
+	}
+	// vireado pra esquerda
+	else if ((*ladrao).orientacao == 1){
+		direcao_andar = -1; // andar pra esquerda
+	}
+
+	(*ladrao).x += (*ladrao).vx * direcao_andar;
+
+	// subindo de andar se chegar no fim da tela esquerda
+	if ((*ladrao).x + (*ladrao).largura <= 0) {
+		(*ladrao).x = SCREEN_W - (*ladrao).largura;
+		(*ladrao).y -=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		(*ladrao).andar += 1;
+		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // atualiza o chão
+	}
+	// descendo de andar se chegar no fim da tela direita
+	else if ((*ladrao).x >= SCREEN_W) {
+		(*ladrao).x = 0;
+		(*ladrao).y +=  SCREEN_H/6.0; // altura de um andar -> depois refatorar código com esse nome
+		(*ladrao).andar -= 1;
+		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // atualiza o chão
+	}
+}
+
+void desenhar_cenario(Mundo mundo) {
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
@@ -256,7 +251,7 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// elementos estáticos
 
 	// tela 1
-	if (policial.num_tela == 1) {
+	if (mundo.num_tela == 1) {
 		// retangulo azul
 		float dist_parede = SCREEN_W/4.0;
 		float largura = SCREEN_W/6.0;
@@ -439,11 +434,11 @@ int main(int argc, char **argv){
 
 
 			//atualiza posicões personagens
-			atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
+			atualizar_posicao_policial(&policial, teclas, mundo);
 			atualizar_posicao_ladrao(&ladrao, policial);
 
 			//desenha tudo
-			desenhar_cenario(mundo, policial);
+			desenhar_cenario(mundo);
 			desenhar_policial(policial);
 			desenhar_ladrao(ladrao);
 
