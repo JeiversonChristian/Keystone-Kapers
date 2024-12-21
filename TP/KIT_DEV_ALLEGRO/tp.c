@@ -58,11 +58,23 @@ typedef struct Elevador{
 	int subir_descer; // para decidir se vai subir ou descer
 }Elevador;
 
+typedef struct Lama{
+	float largura;
+	float altura;
+	float x;
+	float x_global;
+	float y;
+	float y_chao;
+	float num_sala;
+	float andar;
+}Lama;
+
 typedef struct Mundo{
 	ALLEGRO_BITMAP *imagem_cidade;
 	float g; // gravidade
 	float dt; // intervalo de tempo que passa no mundo
 	Elevador elevador;
+	Lama lamas[6];
 }Mundo;
 // ---------------------------------------------------------------------------------------------------
 
@@ -131,6 +143,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).imagem_cidade = imagem_cidade;
 	(*mundo).g = 25.0; // valor alto, pra lógica do pulo
 	(*mundo).dt = 5.0/FPS;
+	
 	// -> elevador
 	(*mundo).elevador.largura = (1.5)*(*policial).largura;
 	(*mundo).elevador.altura = (*policial).altura + (*policial).altura/4 + (*policial).altura/8;
@@ -144,6 +157,61 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).elevador.y_chao_porta = (*mundo).elevador.y_chao;
 	(*mundo).elevador.porta_aberta = 1; // 1 aberto, 0 fechado
 	(*mundo).elevador.subir_descer = 1; // -1 subindo; 1 descendo
+	
+	// -> lama	
+	(*mundo).lamas[0].largura = 2*(*policial).largura; 
+	(*mundo).lamas[0].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[0].x = 0; 
+	(*mundo).lamas[0].x_global = 3*SCREEN_W; // 1ª tela
+	(*mundo).lamas[0].y = (*policial).y_chao; // 1º andar
+	(*mundo).lamas[0].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura; 
+	(*mundo).lamas[0].num_sala = 1;
+	(*mundo).lamas[0].andar = 1;
+
+	(*mundo).lamas[1].largura = 2*(*policial).largura; 
+	(*mundo).lamas[1].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[1].x_global = 2*SCREEN_W + SCREEN_W/2 - ((*mundo).lamas[1].largura)/2; //2ª tela
+	(*mundo).lamas[1].x = (int)((*mundo).lamas[1]).x_global % SCREEN_W;
+	(*mundo).lamas[1].y = (*policial).y_chao; // 1º andar
+	(*mundo).lamas[1].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura;
+	(*mundo).lamas[1].num_sala = 2;
+	(*mundo).lamas[1].andar = 1;
+
+	(*mundo).lamas[2].largura = 2*(*policial).largura; 
+	(*mundo).lamas[2].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[2].x_global = 4*SCREEN_W - SCREEN_W/4; // 1ª tela
+	(*mundo).lamas[2].x = (int)((*mundo).lamas[2]).x_global % SCREEN_W;
+	(*mundo).lamas[2].y = (*mundo).lamas[1].y - SCREEN_H/6; // 2º andar
+	(*mundo).lamas[2].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
+	(*mundo).lamas[2].num_sala = 1;
+	(*mundo).lamas[2].andar = 2;
+
+	(*mundo).lamas[3].largura = 2*(*policial).largura; 
+	(*mundo).lamas[3].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[3].x_global = 0*SCREEN_W + SCREEN_W/4; // 4ª tela
+	(*mundo).lamas[3].x = (int)((*mundo).lamas[3]).x_global % SCREEN_W;
+	(*mundo).lamas[3].y = (*mundo).lamas[1].y - SCREEN_H/6; // 2º andar
+	(*mundo).lamas[3].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
+	(*mundo).lamas[3].num_sala = 4;
+	(*mundo).lamas[3].andar = 2;
+
+	(*mundo).lamas[4].largura = 2*(*policial).largura; 
+	(*mundo).lamas[4].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[4].x_global = 2*SCREEN_W; // 3ª tela
+	(*mundo).lamas[4].x = (int)((*mundo).lamas[4]).x_global % SCREEN_W;
+	(*mundo).lamas[4].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
+	(*mundo).lamas[4].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
+	(*mundo).lamas[4].num_sala = 3;
+	(*mundo).lamas[4].andar = 3;
+
+	(*mundo).lamas[5].largura = 2*(*policial).largura; 
+	(*mundo).lamas[5].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[5].x_global = 2*SCREEN_W + (*mundo).lamas[5].largura; // 3ª tela
+	(*mundo).lamas[5].x = (int)((*mundo).lamas[5]).x_global % SCREEN_W;
+	(*mundo).lamas[5].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
+	(*mundo).lamas[5].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
+	(*mundo).lamas[5].num_sala = 3;
+	(*mundo).lamas[5].andar = 3;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -428,6 +496,13 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(184,184,64));
 		// 1º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(184,184,64));
+	}
+
+	int i;
+	for (i=0; i<6; i++){
+		if(mundo.lamas[i].num_sala == policial.num_tela){
+			al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
+		}
 	}
 
 }
