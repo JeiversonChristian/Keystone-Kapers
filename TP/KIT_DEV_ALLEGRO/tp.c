@@ -215,6 +215,18 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
+	// lama
+	int i;
+	for(i=0; i<6; i++){
+		if ((*policial).x_global >= mundo.lamas[i].x_global && (*policial).x_global + (*policial).largura <= mundo.lamas[i].x_global + mundo.lamas[i].largura && mundo.lamas[i].andar == (*policial).andar){
+			(*policial).vx = 1.0;
+			break; // ao se achar na lama, esteje na lama até não estar mais
+		}
+		else {
+			(*policial).vx = 5.0;
+		}
+	}
+	
 	// andar para esquerda
 	if (teclas.a == 1 && teclas.d == 0 && (*policial).pode_andar == 1){
 		(*policial).orientacao = 1; // orientação da imagem -> pra esquerda
