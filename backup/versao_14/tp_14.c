@@ -18,8 +18,6 @@ typedef struct Tecla{
 	int espaco;
 	int d;
 	int a;
-	int w;
-	int s;
 }Tecla;
 
 typedef struct Personagem{
@@ -40,7 +38,6 @@ typedef struct Personagem{
 	float y_chao; // altura do chão onde se encontra
 	int num_tela; // cada cenário tem várias telas
 	int subir_descer; // para decidir se vai subir ou descer
-	int dentro_elevador; // variável de controle
 }Personagem;
 
 typedef struct Elevador{
@@ -54,7 +51,6 @@ typedef struct Elevador{
 	float andar;
 	float y_porta;
 	float y_chao_porta;
-	float porta_aberta;
 }Elevador;
 
 typedef struct Mundo{
@@ -79,12 +75,9 @@ const int SCREEN_H = 690;
 
 void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade){
 	// teclas
-	// 0 -> não pressionada
-	(*teclas).espaco = 0;
-	(*teclas).d = 0;
-	(*teclas).a = 0;
-	(*teclas).w = 0;
-	(*teclas).s = 0;
+	(*teclas).espaco = 0; // não pressionada
+	(*teclas).d = 0; // não pressionada
+	(*teclas).a = 0; // não pressionada
 
 	// Policial
 	(*policial).imagem = imagem_policial;
@@ -104,7 +97,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
 	(*policial).num_tela = 1; // tela que o jogador vê
 	(*policial).subir_descer = -1; // não se aplica
-	(*policial).dentro_elevador = 0; // começa fora
 
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
@@ -124,7 +116,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // y do chão abaixo do ladrão
 	(*ladrao).num_tela = 1; // tela que o bandido "vê"
 	(*ladrao).subir_descer = 0; // começa querendo subir
-	(*ladrao).dentro_elevador = 0; // será que faço ele aprender a entrar?
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
@@ -141,7 +132,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).elevador.andar = 1;
 	(*mundo).elevador.y_porta = (*mundo).elevador.y;
 	(*mundo).elevador.y_chao_porta = (*mundo).elevador.y_chao;
-	(*mundo).elevador.porta_aberta = 1;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -209,28 +199,6 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 			(*policial).pulando = 0;
 			(*policial).pode_pular = 1;
 			(*policial).pode_andar = 1;
-		}
-	}
-
-	// entrar e sair do elevador
-	if (teclas.w == 1){
-		if ((*policial).pode_andar == 1 && (*policial).dentro_elevador == 0){
-			if ((*policial).x_global >= mundo.elevador.x_global && (*policial).x_global + (*policial).largura <= mundo.elevador.x_global + mundo.elevador.largura){
-				if ((*policial).andar == mundo.elevador.andar && mundo.elevador.porta_aberta == 1){
-					(*policial).pode_pular = 0;
-					(*policial).pode_andar = 0;
-					(*policial).dentro_elevador = 1;
-					(*policial).y -= (*policial).altura/8;
-				}
-			}
-		}
-	}
-	if (teclas.s == 1){
-		if((*policial).dentro_elevador == 1 && mundo.elevador.porta_aberta == 1){
-			(*policial).pode_pular = 1;
-			(*policial).pode_andar = 1;
-			(*policial).dentro_elevador = 0;
-			(*policial).y += (*policial).altura/8;
 		}
 	}
 
@@ -381,12 +349,8 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(0,60,0));
 		// 1º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(0,60,0));
-
 		// porta aberta
-		if(mundo.elevador.porta_aberta == 1){
-			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_porta, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao_porta, al_map_rgb(80,156,128));
-		}
-		
+		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_porta, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao_porta, al_map_rgb(80,156,128));
 		// chão do elevador
 		// 3º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(184,184,64));
@@ -420,12 +384,6 @@ void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado) {
     }
 	if (ev.keyboard.keycode == ALLEGRO_KEY_A) {
 		(*teclas).a = pressionado;
-    }
-	if (ev.keyboard.keycode == ALLEGRO_KEY_W) {
-		(*teclas).w = pressionado;
-    }
-	if (ev.keyboard.keycode == ALLEGRO_KEY_S) {
-		(*teclas).s = pressionado;
     }
 }
 // ---------------------------------------------------------------------------------------------------
