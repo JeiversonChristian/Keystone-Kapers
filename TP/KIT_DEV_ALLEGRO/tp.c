@@ -260,7 +260,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	// foge ladrão
 	// o policial tiver na frente do ladrão, ele foge pro outro lado
-	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar){
+	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 0;
 		// se tava subindo, desce, ou vice-versa
 		if ((*ladrao).subir_descer == 0){
@@ -270,7 +270,7 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 			(*ladrao).subir_descer = 0;
 		}
 	}
-	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar){
+	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 1;
 		if ((*ladrao).subir_descer == 0){
 			(*ladrao).subir_descer = 1;
