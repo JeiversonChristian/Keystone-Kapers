@@ -39,7 +39,6 @@ typedef struct Personagem{
 	int pulando; // variável de controle
 	float y_chao; // altura do chão onde se encontra
 	int num_tela; // cada cenário tem várias telas
-	int subir_descer; // para decidir se vai subir ou descer
 	int dentro_elevador; // variável de controle
 }Personagem;
 
@@ -116,7 +115,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).pode_andar = 1; // sim
 	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
 	(*policial).num_tela = 1; // tela que o jogador vê
-	(*policial).subir_descer = -1; // não se aplica
 	(*policial).dentro_elevador = 0; // começa fora
 
 	// Ladrão
@@ -136,7 +134,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).pode_andar = 1; // sim
 	(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // y do chão abaixo do ladrão
 	(*ladrao).num_tela = 1; // tela que o bandido "vê"
-	(*ladrao).subir_descer = 0; // começa querendo subir
 	(*ladrao).dentro_elevador = 0; // será que faço ele aprender a entrar?
 
 	// mundo
@@ -197,20 +194,20 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 
 	(*mundo).lamas[4].largura = 2*(*policial).largura; 
 	(*mundo).lamas[4].altura = (*policial).altura/16; // fininha
-	(*mundo).lamas[4].x_global = 2*SCREEN_W; // 3ª tela
+	(*mundo).lamas[4].x_global = 2*SCREEN_W; // 2ª tela
 	(*mundo).lamas[4].x = (int)((*mundo).lamas[4]).x_global % SCREEN_W;
 	(*mundo).lamas[4].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
 	(*mundo).lamas[4].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
-	(*mundo).lamas[4].num_sala = 3;
+	(*mundo).lamas[4].num_sala = 2;
 	(*mundo).lamas[4].andar = 3;
 
 	(*mundo).lamas[5].largura = 2*(*policial).largura; 
 	(*mundo).lamas[5].altura = (*policial).altura/16; // fininha
-	(*mundo).lamas[5].x_global = 2*SCREEN_W + (*mundo).lamas[5].largura; // 3ª tela
+	(*mundo).lamas[5].x_global = 2*SCREEN_W + (*mundo).lamas[5].largura; // 2ª tela
 	(*mundo).lamas[5].x = (int)((*mundo).lamas[5]).x_global % SCREEN_W;
 	(*mundo).lamas[5].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
 	(*mundo).lamas[5].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
-	(*mundo).lamas[5].num_sala = 3;
+	(*mundo).lamas[5].num_sala = 2;
 	(*mundo).lamas[5].andar = 3;
 }
 
@@ -218,7 +215,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 	// lama
 	int i;
 	for(i=0; i<6; i++){
-		if ((*policial).x_global >= mundo.lamas[i].x_global && (*policial).x_global + (*policial).largura <= mundo.lamas[i].x_global + mundo.lamas[i].largura && mundo.lamas[i].andar == (*policial).andar){
+		if ((*policial).x_global >= mundo.lamas[i].x_global && (*policial).x_global + (*policial).largura <= mundo.lamas[i].x_global + mundo.lamas[i].largura && mundo.lamas[i].andar == (*policial).andar && (*policial).pulando == 0){
 			(*policial).vx = 1.0;
 			break; // ao se achar na lama, esteje na lama até não estar mais
 		}
@@ -342,22 +339,9 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	// o policial tiver na frente do ladrão, ele foge pro outro lado
 	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 0;
-		// se tava subindo, desce, ou vice-versa
-		if ((*ladrao).subir_descer == 0){
-			(*ladrao).subir_descer = 1;
-		}
-		else{
-			(*ladrao).subir_descer = 0;
-		}
 	}
 	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 1;
-		if ((*ladrao).subir_descer == 0){
-			(*ladrao).subir_descer = 1;
-		}
-		else{
-			(*ladrao).subir_descer = 0;
-		}
 	}
 
 	int direcao_andar;
@@ -371,32 +355,44 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
 
 	// mudando de andar ao se chegar na parede esquerda
-	if ((*ladrao).x_global + (*ladrao).largura <= 0) {
-		(*ladrao).x_global = 0;
-		(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
-		(*ladrao).orientacao = 0; // vira pra direita
-		if ((*ladrao).subir_descer == 0){
+	if ((*ladrao).x_global + (*ladrao).largura <= 0){
+		if ((*ladrao).andar == 1 || (*ladrao).andar == 3){
 			(*ladrao).y -=  SCREEN_H/6.0; // sobe
 			(*ladrao).andar += 1;
+			(*ladrao).x_global = 0;
+			(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+			(*ladrao).orientacao = 0; // vira pra direita
 		}
-		else{
+		else if ((*ladrao).andar == 2 || (*ladrao).andar == 4){
 			(*ladrao).y +=  SCREEN_H/6.0; // desce
 			(*ladrao).andar -= 1;
+			(*ladrao).x_global = 0;
+			(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+			(*ladrao).orientacao = 0; // vira pra direita
 		}
 		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
 	}
+
 	// mudando de andar ao se chegar no fim da tela direita
 	else if ((*ladrao).x_global >= 4*SCREEN_W) {
-		(*ladrao).x_global = 4*SCREEN_W - (*ladrao).largura;;
-		(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
-		(*ladrao).orientacao = 1; // vira pra esquerda
-		if ((*ladrao).subir_descer == 0){
+		if ((*ladrao).andar == 2){
 			(*ladrao).y -=  SCREEN_H/6.0; // sobe
 			(*ladrao).andar += 1;
+			(*ladrao).x_global = 4*SCREEN_W - (*ladrao).largura;;
+			(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+			(*ladrao).orientacao = 1; // vira pra esquerda		
 		}
-		else{
+		else if ((*ladrao).andar == 3){
 			(*ladrao).y +=  SCREEN_H/6.0; // desce
 			(*ladrao).andar -= 1;
+			(*ladrao).x_global = 4*SCREEN_W - (*ladrao).largura;;
+			(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
+			(*ladrao).orientacao = 1; // vira pra esquerda	
+		}
+		else if ((*ladrao).andar == 4 || (*ladrao).andar == 1){
+			(*ladrao).pode_andar = 0;
+			(*ladrao).andar = -1; // pra identificar se ganhou
+			(*ladrao).num_tela = -1; // pra não desenhar
 		}
 		(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura;
 	}
