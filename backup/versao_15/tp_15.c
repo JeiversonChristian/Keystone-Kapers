@@ -55,7 +55,6 @@ typedef struct Elevador{
 	float y_porta;
 	float y_chao_porta;
 	float porta_aberta;
-	int subir_descer; // para decidir se vai subir ou descer
 }Elevador;
 
 typedef struct Mundo{
@@ -142,8 +141,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).elevador.andar = 1;
 	(*mundo).elevador.y_porta = (*mundo).elevador.y;
 	(*mundo).elevador.y_chao_porta = (*mundo).elevador.y_chao;
-	(*mundo).elevador.porta_aberta = 1; // 1 aberto, 0 fechado
-	(*mundo).elevador.subir_descer = 1; // -1 subindo; 1 descendo
+	(*mundo).elevador.porta_aberta = 1;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -234,12 +232,6 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 			(*policial).dentro_elevador = 0;
 			(*policial).y += (*policial).altura/8;
 		}
-	}
-	// sobe ou desce com o elevador.
-	if ((*policial).dentro_elevador == 1){
-		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
-		(*policial).y_chao = mundo.elevador.y_chao_porta;
-		(*policial).andar = mundo.elevador.andar;
 	}
 
 	// mudar de tela
@@ -333,32 +325,6 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	}
 	else if ((*ladrao).x_global >= 0*SCREEN_W && (*ladrao).x_global < 1*SCREEN_W){
 		(*ladrao).num_tela = 4;
-	}
-}
-
-void atualiza_posicao_elevador(Mundo *mundo, int tempo){
-	// a cada 2 segundos atualiza
-	if (tempo == 2){
-		if ((*mundo).elevador.porta_aberta == 1){
-			(*mundo).elevador.porta_aberta = 0;
-			if((*mundo).elevador.andar < 3 && (*mundo).elevador.subir_descer == -1){
-				(*mundo).elevador.y_porta -= SCREEN_H/6;
-				(*mundo).elevador.y_chao_porta -= SCREEN_H/6;
-				(*mundo).elevador.andar += 1;
-			}
-			if((*mundo).elevador.andar > 1 && (*mundo).elevador.subir_descer == +1){
-				(*mundo).elevador.y_porta += SCREEN_H/6;
-				(*mundo).elevador.y_chao_porta += SCREEN_H/6;
-				(*mundo).elevador.andar -= 1;
-			}
-			// inverte o sentido ao chegar nos limites
-			if((*mundo).elevador.andar == 3 || (*mundo).elevador.andar == 1){
-				(*mundo).elevador.subir_descer *= -1;
-			}
-		}
-		else{
-			(*mundo).elevador.porta_aberta = 1;
-		}
 	}
 }
 
@@ -597,7 +563,6 @@ int main(int argc, char **argv){
 	//--------------------------- looping principal ------------------------------------------
 
 	int playing = 1;
-	int tempo = 0;
 	while(playing) 
 	{
 		ALLEGRO_EVENT ev;
@@ -607,9 +572,6 @@ int main(int argc, char **argv){
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 
-			// registra tempo passado
-			tempo += 1;
-
 			//limpa a tela
 			al_clear_to_color(al_map_rgb(0,0,0));
 
@@ -617,7 +579,6 @@ int main(int argc, char **argv){
 			//atualiza posicões personagens
 			atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
 			atualizar_posicao_ladrao(&ladrao, policial);
-			atualiza_posicao_elevador(&mundo, tempo);
 
 			//desenha tudo
 			desenhar_cenario(mundo, policial);
@@ -626,11 +587,7 @@ int main(int argc, char **argv){
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
-
-			// reseta o tempo a cada 2 segundos
-			if (tempo == 2*60){
-				tempo = 0;
-			}			
+			
 		}
 
 		//se o tipo de evento for o fechamento da tela (clique no x da janela)
