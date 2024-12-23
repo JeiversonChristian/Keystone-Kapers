@@ -20,6 +20,7 @@ typedef struct Tecla{
 	int a;
 	int w;
 	int s;
+	int p;
 }Tecla;
 
 typedef struct Personagem{
@@ -120,6 +121,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*teclas).a = 0;
 	(*teclas).w = 0;
 	(*teclas).s = 0;
+	(*teclas).p = 0;
 
 	// Policial
 	(*policial).imagem = imagem_policial;
@@ -237,8 +239,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// escada 1 -> 1ª tela, 2º andar
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
-	(*mundo).escadas[1].vy = 2;
-	(*mundo).escadas[1].vx = 2;
 
 	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
@@ -278,6 +278,10 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].teto.y = (*mundo).escadas[1].degraus[12].y;
 	(*mundo).escadas[1].teto.y_chao = (*mundo).escadas[1].degraus[12].y_chao;
 	(*mundo).escadas[1].teto.num = 12;
+
+	// é necessário percorrer um degrau em x ao mesmo tempo em que se percorre em y
+	(*mundo).escadas[1].vy = (*mundo).escadas[1].degraus[0].altura/8;
+	(*mundo).escadas[1].vx = (*mundo).escadas[1].degraus[0].largura/8;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -510,26 +514,42 @@ void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 void atualiza_posicao_escada(Mundo *mundo, int tempo){
 	int i;
 	if (tempo % (60/12) == 0){
-		for (i=0; i<8; i++){
-			(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
-			(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
-			(*mundo).escadas[1].degraus[i].y -= (*mundo).escadas[1].vy;
-			(*mundo).escadas[1].degraus[i].y_chao -= (*mundo).escadas[1].vy;
-		}
+
 		int num_teto = (*mundo).escadas[1].teto.num;
 		int num_pe = (*mundo).escadas[1].pe.num;
-		if ((*mundo).escadas[1].degraus[num_teto].y < (*mundo).escadas[1].teto.y && (*mundo).escadas[1].degraus[num_pe].x >= (*mundo).escadas[1].pe.x + (*mundo).escadas[1].degraus[num_pe].largura){
-			(*mundo).escadas[1].degraus[num_teto].x_global = (*mundo).escadas[1].pe.x_global;
-			(*mundo).escadas[1].degraus[num_teto].x = (*mundo).escadas[1].pe.x;
+
+		for (i=0; i<13; i++){
+
+			if ((*mundo).escadas[1].degraus[i].x >= (*mundo).escadas[1].teto.x - (*mundo).escadas[1].degraus[i].largura  || (*mundo).escadas[1].degraus[i].x <= (*mundo).escadas[1].pe.x + (*mundo).escadas[1].degraus[i].largura){
+				(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
+				(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
+			}
+
+			else{
+				(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
+				(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
+				(*mundo).escadas[1].degraus[i].y -= (*mundo).escadas[1].vy;
+				(*mundo).escadas[1].degraus[i].y_chao -= (*mundo).escadas[1].vy;
+			}
+
+		}	
+
+		if ((*mundo).escadas[1].degraus[num_teto].x >= (*mundo).escadas[1].teto.x + (*mundo).escadas[1].degraus[num_teto].largura){
+			(*mundo).escadas[1].degraus[num_teto].x_global = (*mundo).escadas[1].degraus[num_pe].x_global - (*mundo).escadas[1].degraus[num_teto].largura;
+			(*mundo).escadas[1].degraus[num_teto].x = (int)(*mundo).escadas[1].degraus[num_teto].x_global % SCREEN_W;
 			(*mundo).escadas[1].degraus[num_teto].y = (*mundo).escadas[1].pe.y;
 			(*mundo).escadas[1].degraus[num_teto].y_chao = (*mundo).escadas[1].pe.y_chao;
-			(*mundo).escadas[1].teto.num -= 1;
-			(*mundo).escadas[1].pe.num -= 1;
-			if ((*mundo).escadas[1].teto.num < 0){
-				(*mundo).escadas[1].teto.num = 7;
+			if ((*mundo).escadas[1].teto.num >= 1){
+				(*mundo).escadas[1].teto.num -= 1;
 			}
-			if ((*mundo).escadas[1].pe.num < 0){
-				(*mundo).escadas[1].pe.num = 7;
+			else {
+				(*mundo).escadas[1].teto.num = 12;
+			}
+			if ((*mundo).escadas[1].pe.num >= 1){
+				(*mundo).escadas[1].pe.num -= 1;
+			}
+			else {
+				(*mundo).escadas[1].pe.num = 12;
 			}
 		}
 	}
@@ -613,7 +633,15 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// escada
 	if(mundo.escadas[1].num_sala == policial.num_tela){
 		for (i=0; i<13; i++){
-			al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));
+			if (i == 0){
+				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,0));
+			}
+			else if (i == 12){
+				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(0,0,255));
+			}
+			else{
+				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));
+			}			
 		}
 	}
 
@@ -649,6 +677,9 @@ void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado) {
     }
 	if (ev.keyboard.keycode == ALLEGRO_KEY_S) {
 		(*teclas).s = pressionado;
+    }
+	if (ev.keyboard.keycode == ALLEGRO_KEY_P) {
+		(*teclas).p = pressionado;
     }
 }
 // ---------------------------------------------------------------------------------------------------
@@ -786,6 +817,7 @@ int main(int argc, char **argv){
 	//--------------------------- looping principal ------------------------------------------
 
 	int playing = 1;
+	int pause = 0;
 	int tempo = 0;
 	while(playing) 
 	{
@@ -796,18 +828,24 @@ int main(int argc, char **argv){
 		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 
+			// verifica se pausou
+			pause = teclas.p;
+
 			// registra tempo passado
-			tempo += 1;
+			if (pause == 0)
+				tempo += 1;
 
 			//limpa a tela
 			al_clear_to_color(al_map_rgb(0,0,0));
 
 
-			//atualiza posicões personagens
-			atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
-			atualizar_posicao_ladrao(&ladrao, policial);
-			atualiza_posicao_elevador(&mundo, tempo);
-			//atualiza_posicao_escada(&mundo, tempo);
+			//atualiza posicões de tudo
+			if (pause == 0) {
+				atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
+				atualizar_posicao_ladrao(&ladrao, policial);
+				atualiza_posicao_elevador(&mundo, tempo);
+				atualiza_posicao_escada(&mundo, tempo);
+			}
 
 			//desenha tudo
 			desenhar_cenario(mundo, policial);
