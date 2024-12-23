@@ -75,13 +75,16 @@ typedef struct Degrau{
 	float x;
 	float y;
 	float y_chao;
+	int num;
 }Degrau;
 
 typedef struct Escada{
 	Degrau degraus[7];
 	Degrau pe; // degrau de baixo -> variável auxiliar
+	Degrau teto;
 	float num_sala;
 	float andar;
+	float v; // velocidade
 }Escada;
 
 typedef struct Mundo{
@@ -139,7 +142,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).largura = al_get_bitmap_width(imagem_ladrao);
 	(*ladrao).altura = al_get_bitmap_height(imagem_ladrao);
 	(*ladrao).x = SCREEN_W/2 - (*ladrao).largura/2;; // no meio do andar
-	(*ladrao).x_global = 2*SCREEN_W + (*ladrao).x; // na segunda sala (tela)
+	(*ladrao).x_global = 1*SCREEN_W + (*ladrao).x; // na 3ª sala (tela)
 	(*ladrao).y = 4*SCREEN_H/6.0 - (*ladrao).altura; // andar do meio
 	(*ladrao).vx = 3.0; // ligeiramente mais lento que o policial
 	(*policial).vy = 0; // pra não pular mesmo
@@ -231,18 +234,22 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	int i;
 	for (i=0; i<7; i++){
 		(*mundo).escadas[1].degraus[i].largura = (*policial).largura/2;
-		(*mundo).escadas[1].degraus[i].altura = (SCREEN_H/6)/6; // 1/6 de um andar
+		(*mundo).escadas[1].degraus[i].altura = (SCREEN_H/6)/8; // 1/8 de um andar
 		(*mundo).escadas[1].degraus[i].x_global = 4*SCREEN_W - SCREEN_W/4 + i*(*mundo).escadas[1].degraus[i].largura; // 1ª tela
 		(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
 		(*mundo).escadas[1].degraus[i].y = 4*(SCREEN_H/6) - i*(*mundo).escadas[1].degraus[i].altura;
 		(*mundo).escadas[1].degraus[i].y_chao = 4*(SCREEN_H/6) + (*mundo).escadas[1].degraus[i].altura - i*(*mundo).escadas[1].degraus[i].altura;
+		(*mundo).escadas[1].degraus[i].num = i;
 	}
 	(*mundo).escadas[1].pe.x_global = (*mundo).escadas[1].degraus[0].x_global;
 	(*mundo).escadas[1].pe.x = (*mundo).escadas[1].degraus[0].x;
 	(*mundo).escadas[1].pe.y = (*mundo).escadas[1].degraus[0].y;
 	(*mundo).escadas[1].pe.y_chao = (*mundo).escadas[1].degraus[0].y_chao;
+	(*mundo).escadas[1].teto.y = 3*(SCREEN_H/6); // no começo do andar acima
+	(*mundo).escadas[1].teto.num = 6; // último degrau
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
+	(*mundo).escadas[1].v = 2;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -448,7 +455,7 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 
 void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 	// a cada 2 segundos atualiza
-	if (tempo == 2){
+	if (tempo % (2*60) == 0){
 		if ((*mundo).elevador.porta_aberta == 1){
 			(*mundo).elevador.porta_aberta = 0;
 			if((*mundo).elevador.andar < 3 && (*mundo).elevador.subir_descer == -1){
@@ -469,6 +476,29 @@ void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 		else{
 			(*mundo).elevador.porta_aberta = 1;
 		}
+	}
+}
+
+void atualiza_posicao_escada(Mundo *mundo, int tempo){
+	int i;
+	if (tempo % 2 == 0){
+		for (i=0; i<7; i++){
+			(*mundo).escadas[0].degraus[i].x_global += (*mundo).escadas[0].v;
+			(*mundo).escadas[0].degraus[i].x = (int)(*mundo).escadas[0].degraus[i].x_global % SCREEN_W;
+			(*mundo).escadas[0].degraus[i].y -= (*mundo).escadas[0].v;
+			(*mundo).escadas[0].degraus[i].y_chao -= (*mundo).escadas[0].v;
+		}/*
+		int num_teto = (*mundo).escadas[0].teto.num;
+		if ((*mundo).escadas[0].degraus[num_teto].y > (*mundo).escadas[0].teto.y){
+			(*mundo).escadas[0].degraus[num_teto].x_global = (*mundo).escadas[0].pe.x_global;
+			(*mundo).escadas[0].degraus[num_teto].x = (*mundo).escadas[0].pe.x;
+			(*mundo).escadas[0].degraus[num_teto].y = (*mundo).escadas[0].pe.y;
+			(*mundo).escadas[0].degraus[num_teto].y_chao = (*mundo).escadas[0].pe.y_chao;
+			(*mundo).escadas[0].teto.num -= 1;
+			if ((*mundo).escadas[0].teto.num < 0){
+				(*mundo).escadas[0].teto.num = 6;
+			}
+		}*/
 	}
 }
 
@@ -744,6 +774,7 @@ int main(int argc, char **argv){
 			atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
 			atualizar_posicao_ladrao(&ladrao, policial);
 			atualiza_posicao_elevador(&mundo, tempo);
+			atualiza_posicao_escada(&mundo, tempo);
 
 			//desenha tudo
 			desenhar_cenario(mundo, policial);
@@ -753,9 +784,9 @@ int main(int argc, char **argv){
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 
-			// reseta o tempo a cada 2 segundos
-			if (tempo == 2*60){
-				tempo = 0;
+			// reseta o tempo a cada 40 segundos
+			if (tempo == 40){
+				// finalizar jogo, status perdeu
 			}			
 		}
 
