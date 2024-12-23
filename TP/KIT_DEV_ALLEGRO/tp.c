@@ -68,12 +68,29 @@ typedef struct Lama{
 	float andar;
 }Lama;
 
+typedef struct Degrau{
+	float largura;
+	float altura;
+	float x_global;
+	float x;
+	float y;
+	float y_chao;
+}Degrau;
+
+typedef struct Escada{
+	Degrau degraus[7];
+	Degrau pe; // degrau de baixo -> variável auxiliar
+	float num_sala;
+	float andar;
+}Escada;
+
 typedef struct Mundo{
 	ALLEGRO_BITMAP *imagem_cidade;
 	float g; // gravidade
 	float dt; // intervalo de tempo que passa no mundo
 	Elevador elevador;
 	Lama lamas[6];
+	Escada escadas[3];
 }Mundo;
 // ---------------------------------------------------------------------------------------------------
 
@@ -176,7 +193,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 
 	(*mundo).lamas[2].largura = 2*(*policial).largura; 
 	(*mundo).lamas[2].altura = (*policial).altura/16; // fininha
-	(*mundo).lamas[2].x_global = 4*SCREEN_W - SCREEN_W/4; // 1ª tela
+	(*mundo).lamas[2].x_global = 4*SCREEN_W - SCREEN_W/2; // 1ª tela
 	(*mundo).lamas[2].x = (int)((*mundo).lamas[2]).x_global % SCREEN_W;
 	(*mundo).lamas[2].y = (*mundo).lamas[1].y - SCREEN_H/6; // 2º andar
 	(*mundo).lamas[2].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
@@ -209,6 +226,23 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).lamas[5].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
 	(*mundo).lamas[5].num_sala = 2;
 	(*mundo).lamas[5].andar = 3;
+
+	// -> escada
+	int i;
+	for (i=0; i<7; i++){
+		(*mundo).escadas[1].degraus[i].largura = (*policial).largura/2;
+		(*mundo).escadas[1].degraus[i].altura = (SCREEN_H/6)/6; // 1/6 de um andar
+		(*mundo).escadas[1].degraus[i].x_global = 4*SCREEN_W - SCREEN_W/4 + i*(*mundo).escadas[1].degraus[i].largura; // 1ª tela
+		(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
+		(*mundo).escadas[1].degraus[i].y = 4*(SCREEN_H/6) - i*(*mundo).escadas[1].degraus[i].altura;
+		(*mundo).escadas[1].degraus[i].y_chao = 4*(SCREEN_H/6) + (*mundo).escadas[1].degraus[i].altura - i*(*mundo).escadas[1].degraus[i].altura;
+	}
+	(*mundo).escadas[1].pe.x_global = (*mundo).escadas[1].degraus[0].x_global;
+	(*mundo).escadas[1].pe.x = (*mundo).escadas[1].degraus[0].x;
+	(*mundo).escadas[1].pe.y = (*mundo).escadas[1].degraus[0].y;
+	(*mundo).escadas[1].pe.y_chao = (*mundo).escadas[1].degraus[0].y_chao;
+	(*mundo).escadas[1].num_sala = 1;
+	(*mundo).escadas[1].andar = 2;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -481,9 +515,8 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 
 	// elementos interativos
 
-	// tela 4
+	// elevador da tela 4
 	if (policial.num_tela == 4){
-		// elevador
 		// porta fechada
 		// 3º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(0,60,0));
@@ -506,10 +539,18 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(184,184,64));
 	}
 
+	// lama
 	int i;
 	for (i=0; i<6; i++){
 		if(mundo.lamas[i].num_sala == policial.num_tela){
 			al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
+		}
+	}
+
+	// escada
+	if(mundo.escadas[1].num_sala == policial.num_tela){
+		for (i=0; i<7; i++){
+			al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));
 		}
 	}
 
