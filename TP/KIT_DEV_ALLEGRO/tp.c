@@ -413,9 +413,9 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).dentro_escada = 1;
 		(*policial).escada_num = 1;
 
-		for (i=1; i<=11; i++){
+		for (i=0; i<=12; i++){
 			if((*policial).x_global >= mundo.escadas[1].degraus[i].x_global){
-				if((*policial).y_chao >= mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura){
+				if((*policial).y_chao >= mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura && (*policial).degrau_num == -1){
 					// está em cima do degrau
 					(*policial).degrau_num = i;
 					(*policial).pode_andar = 0;
