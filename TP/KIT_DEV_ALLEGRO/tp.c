@@ -41,6 +41,9 @@ typedef struct Personagem{
 	float y_chao; // altura do chão onde se encontra
 	int num_tela; // cada cenário tem várias telas
 	int dentro_elevador; // variável de controle
+	int dentro_escada; // variável de controle
+	int escada_num; // de controle em conjunto com dentro_escada
+	int degrau_num; // de controle em conjunto com dentro_escada
 }Personagem;
 
 typedef struct Elevador{
@@ -87,6 +90,7 @@ typedef struct Escada{
 	float andar;
 	float vy; // velocidade pra cima
 	float vx; // velocidade pro lado
+	float x_global;
 	float x;
 	float largura;
 }Escada;
@@ -141,6 +145,9 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
 	(*policial).num_tela = 1; // tela que o jogador vê
 	(*policial).dentro_elevador = 0; // começa fora
+	(*policial).dentro_escada = 0; // começa fora
+	(*policial).escada_num = -1; // nenhum
+	(*policial).degrau_num = -1; // nenhum
 
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
@@ -160,6 +167,9 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).y_chao = (*ladrao).y + (*ladrao).altura; // y do chão abaixo do ladrão
 	(*ladrao).num_tela = 1; // tela que o bandido "vê"
 	(*ladrao).dentro_elevador = 0; // será que faço ele aprender a entrar?
+	(*ladrao).dentro_escada = 0; // idem
+	(*ladrao).escada_num = -1; // nenhum
+	(*ladrao).degrau_num = -1; // nenhum
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
@@ -282,6 +292,11 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// é necessário percorrer um degrau em x ao mesmo tempo em que se percorre em y
 	(*mundo).escadas[1].vy = (*mundo).escadas[1].degraus[0].altura/8;
 	(*mundo).escadas[1].vx = (*mundo).escadas[1].degraus[0].largura/8;
+
+	// os degraus 12 e 0 são inacessíveis ao usuário
+	(*mundo).escadas[1].x_global = (*mundo).escadas[1].degraus[1].x_global;
+	(*mundo).escadas[1].x = (int)(*mundo).escadas[1].x_global % SCREEN_W;
+	(*mundo).escadas[1].largura = (*mundo).escadas[1].degraus[11].x_global - (*mundo).escadas[1].degraus[1].x_global;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -390,6 +405,42 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
 		(*policial).y_chao = mundo.elevador.y_chao_porta;
 		(*policial).andar = mundo.elevador.andar;
+	}
+
+	// usar escada rolante
+	if ((*policial).x_global >= mundo.escadas[1].x_global && (*policial).x_global + (*policial).largura <= mundo.escadas[1].x_global + mundo.escadas[1].largura && (*policial).andar == mundo.escadas[1].andar){
+		// está dentro da regição da escada
+		(*policial).dentro_escada = 1;
+		(*policial).escada_num = 1;
+
+		for (i=1; i<=11; i++){
+			if((*policial).x_global >= mundo.escadas[1].degraus[i].x_global){
+				if((*policial).y_chao >= mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura){
+					// está em cima do degrau
+					(*policial).degrau_num = i;
+					(*policial).pode_andar = 0;
+					(*policial).pode_pular = 0;
+					(*policial).y_chao = mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura;
+					(*policial).y = (*policial).y_chao - (*policial).altura;
+					break;
+				}
+			}
+		}
+	}
+	//subir
+	if((*policial).dentro_escada == 1){
+		(*policial).y_chao = mundo.escadas[1].degraus[(*policial).degrau_num].y_chao - mundo.escadas[1].degraus[0].altura;
+		(*policial).y = (*policial).y_chao - (*policial).altura;
+		(*policial).x_global = mundo.escadas[1].degraus[(*policial).degrau_num].x_global;
+		(*policial).x = (int)(*policial).x_global % SCREEN_W;
+		if((*policial).y_chao <= mundo.escadas[1].teto.y_chao - mundo.escadas[1].degraus[0].altura){
+			(*policial).dentro_escada = 0;
+			(*policial).escada_num = -1;
+			(*policial).degrau_num = -1;
+			(*policial).pode_andar = 1;
+			(*policial).pode_pular = 1;
+			(*policial).andar += 1;
+		}
 	}
 
 	// mudar de tela
