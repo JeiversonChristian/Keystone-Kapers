@@ -92,7 +92,9 @@ typedef struct Escada{
 	float vx; // velocidade pro lado
 	float x_global;
 	float x;
+	float y;
 	float largura;
+	ALLEGRO_BITMAP *imagem; // só do corrimao
 }Escada;
 
 typedef struct Mundo{
@@ -117,7 +119,7 @@ const int SCREEN_H = 690;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade){
+void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_corrimao){
 	// teclas
 	// 0 -> não pressionada
 	(*teclas).espaco = 0;
@@ -249,6 +251,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// escada 1 -> 1ª tela, 2º andar
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
+	(*mundo).escadas[1].imagem = imagem_corrimao;
 
 	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
@@ -293,10 +296,11 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].vy = (*mundo).escadas[1].degraus[0].altura/8;
 	(*mundo).escadas[1].vx = (*mundo).escadas[1].degraus[0].largura/8;
 
-	// os degraus 12 e 0 são inacessíveis ao usuário
 	(*mundo).escadas[1].x_global = (*mundo).escadas[1].degraus[1].x_global;
 	(*mundo).escadas[1].x = (int)(*mundo).escadas[1].x_global % SCREEN_W;
 	(*mundo).escadas[1].largura = (*mundo).escadas[1].degraus[11].x_global - (*mundo).escadas[1].degraus[1].x_global;
+
+	(*mundo).escadas[1].y =  (*mundo).escadas[1].degraus[12].y;
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
@@ -607,6 +611,8 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo){
 }
 
 void desenhar_cenario(Mundo mundo, Personagem policial) {
+	int i;
+
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
@@ -622,6 +628,17 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// imagem da cidade ao fundo
 	al_draw_bitmap(mundo.imagem_cidade, 0, 1*SCREEN_H/6.0, 0);
 
+
+	// escada
+	if(mundo.escadas[1].num_sala == policial.num_tela){
+		for (i=0; i<13; i++){
+			al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));		
+		}
+		// corrimao
+		al_draw_bitmap(mundo.escadas[1].imagem, mundo.escadas[1].x+5, mundo.escadas[1].y-3, 0);
+	}
+
+
 	// retângulos separadores dos retângulos de fundo
 	// são dois para cada: um mais claro e outro mais escuro
 	int largura = SCREEN_H/60.0;
@@ -634,11 +651,9 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0, SCREEN_W, 5*SCREEN_H/6.0 + largura, al_map_rgb(184,184,64));
 	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0 + largura, SCREEN_W, 5*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
 
-	// elementos não interativos
-
+	// retangulo azul
 	// tela 1
 	if (policial.num_tela == 1) {
-		// retangulo azul
 		float dist_parede = SCREEN_W/4.0;
 		float largura = SCREEN_W/6.0;
 		float dist_teto = (5*SCREEN_H/6.0 - 4*SCREEN_H/6.0)/1.5; 
@@ -647,9 +662,9 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		al_draw_filled_rectangle(SCREEN_W - dist_parede, 4*SCREEN_H/6.0 + dist_teto, SCREEN_W - dist_parede - largura, altura, al_map_rgb(80,112,188));
 	}
 
-	// elementos interativos
 
-	// elevador da tela 4
+	// elevador
+	// tela 4
 	if (policial.num_tela == 4){
 		// porta fechada
 		// 3º andar
@@ -658,12 +673,10 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(0,60,0));
 		// 1º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(0,60,0));
-
 		// porta aberta
 		if(mundo.elevador.porta_aberta == 1){
 			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_porta, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao_porta, al_map_rgb(80,156,128));
-		}
-		
+		}		
 		// chão do elevador
 		// 3º andar
 		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(184,184,64));
@@ -674,25 +687,9 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	}
 
 	// lama
-	int i;
 	for (i=0; i<6; i++){
 		if(mundo.lamas[i].num_sala == policial.num_tela){
 			al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
-		}
-	}
-
-	// escada
-	if(mundo.escadas[1].num_sala == policial.num_tela){
-		for (i=0; i<13; i++){
-			if (i == 0){
-				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,0));
-			}
-			else if (i == 12){
-				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(0,0,255));
-			}
-			else{
-				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));
-			}			
 		}
 	}
 
@@ -788,6 +785,13 @@ int main(int argc, char **argv){
         return -1;
     }
 
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao!\n");
+        return -1;
+    }
+
 	//inicializa o modulo allegro que carrega as fontes
 	al_init_font_addon();
 
@@ -861,7 +865,7 @@ int main(int argc, char **argv){
 	Personagem ladrao;
 	Mundo mundo;
 
-	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade);
+	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_corrimao);
 
 	// ---------------------------------------------------------------------------------------
 	
@@ -942,6 +946,7 @@ int main(int argc, char **argv){
 	al_destroy_bitmap(imagem_cidade);
 	al_destroy_bitmap(imagem_policial);
 	al_destroy_bitmap(imagem_ladrao);
+	al_destroy_bitmap(imagem_corrimao);
  
 	return 0;
 
