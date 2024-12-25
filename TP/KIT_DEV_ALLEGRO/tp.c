@@ -374,6 +374,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
 	// lama
 	int i;
+	int j;
 	for(i=0; i<6; i++){
 		if ((*policial).x_global >= mundo.lamas[i].x_global && (*policial).x_global + (*policial).largura <= mundo.lamas[i].x_global + mundo.lamas[i].largura && mundo.lamas[i].andar == (*policial).andar && (*policial).pulando == 0){
 			(*policial).vx = 1.0;
@@ -480,32 +481,57 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 	}
 
 	// usar escada rolante
-	if ((*policial).x_global >= mundo.escadas[1].x_global && (*policial).x_global + (*policial).largura <= mundo.escadas[1].x_global + mundo.escadas[1].largura && (*policial).andar == mundo.escadas[1].andar){
-		// está dentro da regição da escada
-		(*policial).dentro_escada = 1;
-		(*policial).escada_num = 1;
+	for (j=0; j<=1; j++){
+		if((*policial).dentro_escada==1){
+			break; // pra não ir pra dentro da outra escada
+		}
+		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global + (*policial).largura <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
+			// está dentro da regição da escada
+			(*policial).dentro_escada = 1;
+			(*policial).escada_num = j;
 
-		for (i=0; i<=12; i++){
-			if((*policial).x_global >= mundo.escadas[1].degraus[i].x_global){
-				if((*policial).y_chao >= mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura && (*policial).degrau_num == -1){
-					// está em cima do degrau
-					(*policial).degrau_num = i;
-					(*policial).pode_andar = 0;
-					(*policial).pode_pular = 0;
-					(*policial).y_chao = mundo.escadas[1].degraus[i].y_chao - mundo.escadas[1].degraus[i].altura;
-					(*policial).y = (*policial).y_chao - (*policial).altura;
-					break;
+			for (i=0; i<=12; i++){
+				if(j == 1){
+					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
 				}
+				if(j == 0){
+					if((*policial).x_global - (*policial).largura <= mundo.escadas[j].degraus[i].x_global){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
+				}
+				
 			}
 		}
 	}
 	//subir
 	if((*policial).dentro_escada == 1){
-		(*policial).y_chao = mundo.escadas[1].degraus[(*policial).degrau_num].y_chao - mundo.escadas[1].degraus[0].altura;
+		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
 		(*policial).y = (*policial).y_chao - (*policial).altura;
-		(*policial).x_global = mundo.escadas[1].degraus[(*policial).degrau_num].x_global;
+		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
 		(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		if((*policial).y_chao <= mundo.escadas[1].teto.y_chao - mundo.escadas[1].degraus[0].altura){
+		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
 			(*policial).dentro_escada = 0;
 			(*policial).escada_num = -1;
 			(*policial).degrau_num = -1;
