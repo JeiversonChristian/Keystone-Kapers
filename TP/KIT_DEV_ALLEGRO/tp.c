@@ -21,6 +21,7 @@ typedef struct Tecla{
 	int w;
 	int s;
 	int p;
+	int o;
 }Tecla;
 
 typedef struct Personagem{
@@ -131,6 +132,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*teclas).w = 0;
 	(*teclas).s = 0;
 	(*teclas).p = 0;
+	(*teclas).o = 0;
 
 	// Policial
 	(*policial).imagem = imagem_policial;
@@ -890,6 +892,9 @@ void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado) {
 	if (ev.keyboard.keycode == ALLEGRO_KEY_P) {
 		(*teclas).p = pressionado;
     }
+	if (ev.keyboard.keycode == ALLEGRO_KEY_O) {
+		(*teclas).o = pressionado;
+    }
 }
 // ---------------------------------------------------------------------------------------------------
 
@@ -1045,7 +1050,12 @@ int main(int argc, char **argv){
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 
 			// verifica se pausou
-			pause = teclas.p;
+			if (teclas.p == 1 && pause == 0){
+				pause = 1;
+			}
+			else if(teclas.o == 1 && pause == 1){
+				pause = 0;
+			}
 
 			// registra tempo passado
 			if (pause == 0)
