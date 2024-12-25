@@ -311,6 +311,8 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// ------------------------------------------------------------------------------------------------
 	(*mundo).escadas[0].num_sala = 4;
 	(*mundo).escadas[0].andar = 1;
+	(*mundo).escadas[0].imagem = imagem_corrimao;
+
 	(*mundo).escadas[0].degraus[12].largura = (*policial).largura/2;
 	(*mundo).escadas[0].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
 	(*mundo).escadas[0].degraus[12].x_global = 0;
@@ -485,7 +487,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		if((*policial).dentro_escada==1){
 			break; // pra não ir pra dentro da outra escada
 		}
-		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global + (*policial).largura <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
+		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
 			// está dentro da regição da escada
 			(*policial).dentro_escada = 1;
 			(*policial).escada_num = j;
@@ -507,7 +509,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 					}
 				}
 				if(j == 0){
-					if((*policial).x_global - (*policial).largura <= mundo.escadas[j].degraus[i].x_global){
+					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
 						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
 							// está em cima do degrau
 							(*policial).degrau_num = i;
@@ -787,7 +789,14 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// escada 0 -> 4ª tela, 1º andar
 	// escada 2 -> 4ª tela, 3º andar
 	// --------------------------------------------------------------------------------------------
-	
+	// escada 0
+	if(mundo.escadas[0].num_sala == policial.num_tela){
+		for (i=0; i<13; i++){
+			al_draw_filled_rectangle(mundo.escadas[0].degraus[i].x, mundo.escadas[0].degraus[i].y, mundo.escadas[0].degraus[i].x + mundo.escadas[0].degraus[i].largura, mundo.escadas[0].degraus[i].y_chao, al_map_rgb(255,255,255));
+		}
+		// corrimao
+		al_draw_bitmap(mundo.escadas[0].imagem, mundo.escadas[0].x-18, mundo.escadas[0].y-2, 1);
+	}
 	// --------------------------------------------------------------------------------------------
 
 
@@ -842,20 +851,6 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	for (i=0; i<6; i++){
 		if(mundo.lamas[i].num_sala == policial.num_tela){
 			al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
-		}
-	}
-
-	// escada 0
-	if(mundo.escadas[0].num_sala == policial.num_tela){
-		for (i=0; i<13; i++){
-			if(i == 12){
-				al_draw_filled_rectangle(mundo.escadas[0].degraus[i].x, mundo.escadas[0].degraus[i].y, mundo.escadas[0].degraus[i].x + mundo.escadas[0].degraus[i].largura, mundo.escadas[0].degraus[i].y_chao, al_map_rgb(255,0,0));
-			}
-			else if(i == 0){
-				al_draw_filled_rectangle(mundo.escadas[0].degraus[i].x, mundo.escadas[0].degraus[i].y, mundo.escadas[0].degraus[i].x + mundo.escadas[0].degraus[i].largura, mundo.escadas[0].degraus[i].y_chao, al_map_rgb(0,0,255));
-			}
-			else
-				al_draw_filled_rectangle(mundo.escadas[0].degraus[i].x, mundo.escadas[0].degraus[i].y, mundo.escadas[0].degraus[i].x + mundo.escadas[0].degraus[i].largura, mundo.escadas[0].degraus[i].y_chao, al_map_rgb(255,255,255));
 		}
 	}
 
