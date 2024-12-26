@@ -1076,7 +1076,6 @@ int main(int argc, char **argv){
 	int playing = 1;
 	int pause = 0;
 	int tempo = 0;
-	int tempo_simulado = 0;
 	while(playing) 
 	{
 		ALLEGRO_EVENT ev;
@@ -1094,10 +1093,15 @@ int main(int argc, char **argv){
 				pause = 0;
 			}
 
+			// registra tempo passado
+			if (pause == 0)
+				tempo += 1;
+
 			//limpa a tela
 			al_clear_to_color(al_map_rgb(0,0,0));
-			//atualiza posicões de tudo
 
+
+			//atualiza posicões de tudo
 			if (pause == 0) {
 				atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
 				atualizar_posicao_ladrao(&ladrao, policial);
@@ -1110,21 +1114,11 @@ int main(int argc, char **argv){
 			desenhar_policial(policial, mundo);
 			desenhar_ladrao(ladrao, policial);
 
-			// escreve o tempo que falta no topo
-			 al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %d s", 40 - tempo_simulado);
-
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 
-			// registra tempo passado
-			if (pause == 0)
-				tempo += 1;
-				if(tempo%60 == 0){
-					tempo_simulado += 1;
-				}
-
 			// reseta o tempo a cada 40 segundos
-			if (tempo_simulado >= 40){
+			if (tempo == 40){
 				// finalizar jogo, status perdeu
 			}			
 		}
