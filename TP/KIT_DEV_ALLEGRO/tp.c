@@ -120,7 +120,7 @@ const int SCREEN_H = 690;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_corrimao){
+void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_corrimao0, ALLEGRO_BITMAP *imagem_corrimao1, ALLEGRO_BITMAP *imagem_corrimao2){
 	int i;
 	int j;
 
@@ -257,7 +257,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// ------------------------------------------------------------------------------------------------
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
-	(*mundo).escadas[1].imagem = imagem_corrimao;
+	(*mundo).escadas[1].imagem = imagem_corrimao1;
 
 	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
@@ -311,67 +311,70 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// escada 0 -> 4ª tela, 1º andar
 	// escada 2 -> 4ª tela, 3º andar
 	// ------------------------------------------------------------------------------------------------
-	(*mundo).escadas[0].num_sala = 4;
-	(*mundo).escadas[0].andar = 1;
-	(*mundo).escadas[0].imagem = imagem_corrimao;
+	for (j=0; j<=2; j+=2){
+		(*mundo).escadas[j].num_sala = 4;
+		(*mundo).escadas[j].andar = 1+j;
+		if(j==0)
+			(*mundo).escadas[j].imagem = imagem_corrimao0;
+		else
+			(*mundo).escadas[j].imagem = imagem_corrimao2;
 
-	(*mundo).escadas[0].degraus[12].largura = (*policial).largura/2;
-	(*mundo).escadas[0].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
-	(*mundo).escadas[0].degraus[12].x_global = 0;
-	(*mundo).escadas[0].degraus[12].x = (int)(*mundo).escadas[0].degraus[12].x_global % SCREEN_W;
-	(*mundo).escadas[0].degraus[12].y = 4*(SCREEN_H/6);
-	(*mundo).escadas[0].degraus[12].y_chao = (*mundo).escadas[0].degraus[12].y + (*mundo).escadas[0].degraus[12].altura;
-	(*mundo).escadas[0].degraus[12].num = 12;
+		(*mundo).escadas[j].degraus[12].largura = (*policial).largura/2;
+		(*mundo).escadas[j].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
+		(*mundo).escadas[j].degraus[12].x_global = 0;
+		(*mundo).escadas[j].degraus[12].x = (int)(*mundo).escadas[j].degraus[12].x_global % SCREEN_W;
+		(*mundo).escadas[j].degraus[12].y = (4-j)*(SCREEN_H/6);
+		(*mundo).escadas[j].degraus[12].y_chao = (*mundo).escadas[j].degraus[12].y + (*mundo).escadas[j].degraus[12].altura;
+		(*mundo).escadas[j].degraus[12].num = 12;
 
-	(*mundo).escadas[0].teto.x_global = (*mundo).escadas[0].degraus[12].x_global;
-	(*mundo).escadas[0].teto.x = (*mundo).escadas[0].degraus[12].x;
-	(*mundo).escadas[0].teto.y = (*mundo).escadas[0].degraus[12].y;
-	(*mundo).escadas[0].teto.y_chao = (*mundo).escadas[0].degraus[12].y_chao;
-	(*mundo).escadas[0].teto.num = 12;
+		(*mundo).escadas[j].teto.x_global = (*mundo).escadas[j].degraus[12].x_global;
+		(*mundo).escadas[j].teto.x = (*mundo).escadas[j].degraus[12].x;
+		(*mundo).escadas[j].teto.y = (*mundo).escadas[j].degraus[12].y;
+		(*mundo).escadas[j].teto.y_chao = (*mundo).escadas[j].degraus[12].y_chao;
+		(*mundo).escadas[j].teto.num = 12;
 
-	(*mundo).escadas[0].num_sala = 4;
-	(*mundo).escadas[0].andar = 1;
-	(*mundo).escadas[0].degraus[0].largura = (*policial).largura/2;
-	(*mundo).escadas[0].degraus[0].altura = 0.8*(SCREEN_H/6)/8;
-	(*mundo).escadas[0].degraus[0].x_global = (*mundo).escadas[0].degraus[12].x_global + 12*(*mundo).escadas[0].degraus[12].largura;
-	(*mundo).escadas[0].degraus[0].x = (int)(*mundo).escadas[0].degraus[0].x_global % SCREEN_W;
-	(*mundo).escadas[0].degraus[0].y = 5*(SCREEN_H/6);
-	(*mundo).escadas[0].degraus[0].y_chao = (*mundo).escadas[0].degraus[0].y + (*mundo).escadas[0].degraus[0].altura;
-	(*mundo).escadas[0].degraus[0].num = 0;
+		(*mundo).escadas[j].degraus[0].largura = (*policial).largura/2;
+		(*mundo).escadas[j].degraus[0].altura = 0.8*(SCREEN_H/6)/8;
+		(*mundo).escadas[j].degraus[0].x_global = (*mundo).escadas[j].degraus[12].x_global + 12*(*mundo).escadas[j].degraus[12].largura;
+		(*mundo).escadas[j].degraus[0].x = (int)(*mundo).escadas[j].degraus[0].x_global % SCREEN_W;
+		(*mundo).escadas[j].degraus[0].y = (5-j)*(SCREEN_H/6);
+		(*mundo).escadas[j].degraus[0].y_chao = (*mundo).escadas[j].degraus[0].y + (*mundo).escadas[j].degraus[0].altura;
+		(*mundo).escadas[j].degraus[0].num = 0;
 
-	(*mundo).escadas[0].pe.x_global = (*mundo).escadas[0].degraus[0].x_global;
-	(*mundo).escadas[0].pe.x = (*mundo).escadas[0].degraus[0].x;
-	(*mundo).escadas[0].pe.y = (*mundo).escadas[0].degraus[0].y;
-	(*mundo).escadas[0].pe.y_chao = (*mundo).escadas[0].degraus[0].y_chao;
-	(*mundo).escadas[0].pe.num = 0;
+		(*mundo).escadas[j].pe.x_global = (*mundo).escadas[j].degraus[0].x_global;
+		(*mundo).escadas[j].pe.x = (*mundo).escadas[j].degraus[0].x;
+		(*mundo).escadas[j].pe.y = (*mundo).escadas[j].degraus[0].y;
+		(*mundo).escadas[j].pe.y_chao = (*mundo).escadas[j].degraus[0].y_chao;
+		(*mundo).escadas[j].pe.num = 0;
 
-	for (i=1; i<12; i++){
-		(*mundo).escadas[0].degraus[i].largura = (*policial).largura/2;
-		(*mundo).escadas[0].degraus[i].altura = 0.8*(SCREEN_H/6)/8;
-		(*mundo).escadas[0].degraus[i].x_global = (*mundo).escadas[0].degraus[i-1].x_global - (*mundo).escadas[0].degraus[i-1].largura;
-		(*mundo).escadas[0].degraus[i].x = (int)(*mundo).escadas[0].degraus[i].x_global % SCREEN_W;
-		if (i != 1 && i != 11){
-			(*mundo).escadas[0].degraus[i].y = (*mundo).escadas[0].degraus[i-1].y - (*mundo).escadas[0].degraus[i-1].altura;
-			
+		for (i=1; i<12; i++){
+			(*mundo).escadas[j].degraus[i].largura = (*policial).largura/2;
+			(*mundo).escadas[j].degraus[i].altura = 0.8*(SCREEN_H/6)/8;
+			(*mundo).escadas[j].degraus[i].x_global = (*mundo).escadas[j].degraus[i-1].x_global - (*mundo).escadas[j].degraus[i-1].largura;
+			(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
+			if (i != 1 && i != 11){
+				(*mundo).escadas[j].degraus[i].y = (*mundo).escadas[j].degraus[i-1].y - (*mundo).escadas[j].degraus[i-1].altura;
+				
+			}
+			else if(i == 1){
+				(*mundo).escadas[j].degraus[i].y = (*mundo).escadas[j].degraus[0].y;
+			}
+			else{
+				(*mundo).escadas[j].degraus[i].y = (*mundo).escadas[j].degraus[12].y;
+			}
+			(*mundo).escadas[j].degraus[i].y_chao = (*mundo).escadas[j].degraus[i].y + (*mundo).escadas[j].degraus[i].altura;
+			(*mundo).escadas[j].degraus[i].num = i;
 		}
-		else if(i == 1){
-			(*mundo).escadas[0].degraus[i].y = (*mundo).escadas[0].degraus[0].y;
-		}
-		else{
-			(*mundo).escadas[0].degraus[i].y = (*mundo).escadas[0].degraus[12].y;
-		}
-		(*mundo).escadas[0].degraus[i].y_chao = (*mundo).escadas[0].degraus[i].y + (*mundo).escadas[0].degraus[i].altura;
-		(*mundo).escadas[0].degraus[i].num = i;
-	}
 
-	(*mundo).escadas[0].vy = (*mundo).escadas[0].degraus[0].altura/8;
-	(*mundo).escadas[0].vx = (*mundo).escadas[0].degraus[0].largura/8;
+		(*mundo).escadas[j].vy = (*mundo).escadas[j].degraus[0].altura/8;
+		(*mundo).escadas[j].vx = (*mundo).escadas[j].degraus[0].largura/8;
 
-	(*mundo).escadas[0].x_global = (*mundo).escadas[0].degraus[11].x_global;
-	(*mundo).escadas[0].x = (int)(*mundo).escadas[0].x_global % SCREEN_W;
-	(*mundo).escadas[0].largura = (*mundo).escadas[0].degraus[1].x_global - (*mundo).escadas[0].degraus[11].x_global;
+		(*mundo).escadas[j].x_global = (*mundo).escadas[j].degraus[11].x_global;
+		(*mundo).escadas[j].x = (int)(*mundo).escadas[j].x_global % SCREEN_W;
+		(*mundo).escadas[j].largura = (*mundo).escadas[j].degraus[1].x_global - (*mundo).escadas[j].degraus[11].x_global;
 
-	(*mundo).escadas[0].y =  (*mundo).escadas[0].degraus[12].y;
+		(*mundo).escadas[j].y =  (*mundo).escadas[j].degraus[12].y;
+	}	
 	// ------------------------------------------------------------------------------------------------
 }
 
@@ -485,7 +488,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 	}
 
 	// usar escada rolante
-	for (j=0; j<=1; j++){
+	for (j=0; j<=2; j++){
 		if((*policial).dentro_escada==1){
 			break; // pra não ir pra dentro da outra escada
 		}
@@ -510,7 +513,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 						}
 					}
 				}
-				if(j == 0){
+				if(j == 0 || j == 2){
 					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
 						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
 							// está em cima do degrau
@@ -664,48 +667,53 @@ void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 	}
 }
 
-void atualiza_posicao_escada(Mundo *mundo, int tempo){
-	int i;
+void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 	if (tempo % (60/12) == 0){
+		int i;
+		int j;
+		int num_teto;
+		int num_pe;
+		if (policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala){
 
-		// escada 1 -> 1ª tela, 2º andar
-		// --------------------------------------------------------------------------------------------
+			// escada 1 -> 1ª tela, 2º andar
+			// --------------------------------------------------------------------------------------------
 
-		int num_teto = (*mundo).escadas[1].teto.num;
-		int num_pe = (*mundo).escadas[1].pe.num;
+			num_teto = (*mundo).escadas[1].teto.num;
+			num_pe = (*mundo).escadas[1].pe.num;
 
-		for (i=0; i<13; i++){
+			for (i=0; i<13; i++){
 
-			if ((*mundo).escadas[1].degraus[i].x >= (*mundo).escadas[1].teto.x - (*mundo).escadas[1].degraus[i].largura  || (*mundo).escadas[1].degraus[i].x <= (*mundo).escadas[1].pe.x + (*mundo).escadas[1].degraus[i].largura){
-				(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
-				(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
-			}
+				if ((*mundo).escadas[1].degraus[i].x >= (*mundo).escadas[1].teto.x - (*mundo).escadas[1].degraus[i].largura  || (*mundo).escadas[1].degraus[i].x <= (*mundo).escadas[1].pe.x + (*mundo).escadas[1].degraus[i].largura){
+					(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
+					(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
+				}
 
-			else{
-				(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
-				(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
-				(*mundo).escadas[1].degraus[i].y -= (*mundo).escadas[1].vy;
-				(*mundo).escadas[1].degraus[i].y_chao -= (*mundo).escadas[1].vy;
-			}
+				else{
+					(*mundo).escadas[1].degraus[i].x_global += (*mundo).escadas[1].vx;
+					(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
+					(*mundo).escadas[1].degraus[i].y -= (*mundo).escadas[1].vy;
+					(*mundo).escadas[1].degraus[i].y_chao -= (*mundo).escadas[1].vy;
+				}
 
-		}	
+			}	
 
-		if ((*mundo).escadas[1].degraus[num_teto].x >= (*mundo).escadas[1].teto.x + (*mundo).escadas[1].degraus[num_teto].largura){
-			(*mundo).escadas[1].degraus[num_teto].x_global = (*mundo).escadas[1].degraus[num_pe].x_global - (*mundo).escadas[1].degraus[num_teto].largura;
-			(*mundo).escadas[1].degraus[num_teto].x = (int)(*mundo).escadas[1].degraus[num_teto].x_global % SCREEN_W;
-			(*mundo).escadas[1].degraus[num_teto].y = (*mundo).escadas[1].pe.y;
-			(*mundo).escadas[1].degraus[num_teto].y_chao = (*mundo).escadas[1].pe.y_chao;
-			if ((*mundo).escadas[1].teto.num >= 1){
-				(*mundo).escadas[1].teto.num -= 1;
-			}
-			else {
-				(*mundo).escadas[1].teto.num = 12;
-			}
-			if ((*mundo).escadas[1].pe.num >= 1){
-				(*mundo).escadas[1].pe.num -= 1;
-			}
-			else {
-				(*mundo).escadas[1].pe.num = 12;
+			if ((*mundo).escadas[1].degraus[num_teto].x >= (*mundo).escadas[1].teto.x + (*mundo).escadas[1].degraus[num_teto].largura){
+				(*mundo).escadas[1].degraus[num_teto].x_global = (*mundo).escadas[1].degraus[num_pe].x_global - (*mundo).escadas[1].degraus[num_teto].largura;
+				(*mundo).escadas[1].degraus[num_teto].x = (int)(*mundo).escadas[1].degraus[num_teto].x_global % SCREEN_W;
+				(*mundo).escadas[1].degraus[num_teto].y = (*mundo).escadas[1].pe.y;
+				(*mundo).escadas[1].degraus[num_teto].y_chao = (*mundo).escadas[1].pe.y_chao;
+				if ((*mundo).escadas[1].teto.num >= 1){
+					(*mundo).escadas[1].teto.num -= 1;
+				}
+				else {
+					(*mundo).escadas[1].teto.num = 12;
+				}
+				if ((*mundo).escadas[1].pe.num >= 1){
+					(*mundo).escadas[1].pe.num -= 1;
+				}
+				else {
+					(*mundo).escadas[1].pe.num = 12;
+				}
 			}
 		}
 		// --------------------------------------------------------------------------------------------
@@ -713,43 +721,44 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo){
 		// escada 0 -> 4ª tela, 1º andar
 		// escada 2 -> 4ª tela, 3º andar
 		// --------------------------------------------------------------------------------------------
-		int j;
-		for (j=0; j<=0; j+=2){
-			num_teto = (*mundo).escadas[j].teto.num;
-			num_pe = (*mundo).escadas[j].pe.num;
+		for (j=0; j<=2; j+=2){
+			if (policial.andar == (*mundo).escadas[j].andar && policial.num_tela == (*mundo).escadas[j].num_sala){
+				num_teto = (*mundo).escadas[j].teto.num;
+				num_pe = (*mundo).escadas[j].pe.num;
 
-			for (i=0; i<13; i++){
+				for (i=0; i<13; i++){
 
-				if ((*mundo).escadas[j].degraus[i].x <= (*mundo).escadas[j].teto.x + (*mundo).escadas[j].degraus[i].largura  || (*mundo).escadas[j].degraus[i].x + (*mundo).escadas[j].degraus[i].largura >= (*mundo).escadas[j].pe.x){
-					(*mundo).escadas[j].degraus[i].x_global -= (*mundo).escadas[j].vx;
-					(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
-				}
+					if ((*mundo).escadas[j].degraus[i].x <= (*mundo).escadas[j].teto.x + (*mundo).escadas[j].degraus[i].largura  || (*mundo).escadas[j].degraus[i].x + (*mundo).escadas[j].degraus[i].largura >= (*mundo).escadas[j].pe.x){
+						(*mundo).escadas[j].degraus[i].x_global -= (*mundo).escadas[j].vx;
+						(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
+					}
 
-				else{
-					(*mundo).escadas[j].degraus[i].x_global -= (*mundo).escadas[j].vx;
-					(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
-					(*mundo).escadas[j].degraus[i].y -= (*mundo).escadas[1].vy;
-					(*mundo).escadas[j].degraus[i].y_chao -= (*mundo).escadas[1].vy;
-				}
+					else{
+						(*mundo).escadas[j].degraus[i].x_global -= (*mundo).escadas[j].vx;
+						(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
+						(*mundo).escadas[j].degraus[i].y -= (*mundo).escadas[1].vy;
+						(*mundo).escadas[j].degraus[i].y_chao -= (*mundo).escadas[1].vy;
+					}
 
-			}	
+				}	
 
-			if ((*mundo).escadas[j].degraus[num_teto].x <= 0){
-				(*mundo).escadas[j].degraus[num_teto].x_global = (*mundo).escadas[j].degraus[num_pe].x_global + (*mundo).escadas[j].degraus[num_teto].largura;
-				(*mundo).escadas[j].degraus[num_teto].x = (int)(*mundo).escadas[j].degraus[num_teto].x_global % SCREEN_W;
-				(*mundo).escadas[j].degraus[num_teto].y = (*mundo).escadas[j].pe.y;
-				(*mundo).escadas[j].degraus[num_teto].y_chao = (*mundo).escadas[j].pe.y_chao;
-				if ((*mundo).escadas[j].teto.num >= 1){
-					(*mundo).escadas[j].teto.num -= 1;
-				}
-				else {
-					(*mundo).escadas[j].teto.num = 12;
-				}
-				if ((*mundo).escadas[j].pe.num >= 1){
-					(*mundo).escadas[j].pe.num -= 1;
-				}
-				else {
-					(*mundo).escadas[j].pe.num = 12;
+				if ((*mundo).escadas[j].degraus[num_teto].x <= 0){
+					(*mundo).escadas[j].degraus[num_teto].x_global = (*mundo).escadas[j].degraus[num_pe].x_global + (*mundo).escadas[j].degraus[num_teto].largura;
+					(*mundo).escadas[j].degraus[num_teto].x = (int)(*mundo).escadas[j].degraus[num_teto].x_global % SCREEN_W;
+					(*mundo).escadas[j].degraus[num_teto].y = (*mundo).escadas[j].pe.y;
+					(*mundo).escadas[j].degraus[num_teto].y_chao = (*mundo).escadas[j].pe.y_chao;
+					if ((*mundo).escadas[j].teto.num >= 1){
+						(*mundo).escadas[j].teto.num -= 1;
+					}
+					else {
+						(*mundo).escadas[j].teto.num = 12;
+					}
+					if ((*mundo).escadas[j].pe.num >= 1){
+						(*mundo).escadas[j].pe.num -= 1;
+					}
+					else {
+						(*mundo).escadas[j].pe.num = 12;
+					}
 				}
 			}
 		}
@@ -791,13 +800,28 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// escada 0 -> 4ª tela, 1º andar
 	// escada 2 -> 4ª tela, 3º andar
 	// --------------------------------------------------------------------------------------------
-	// escada 0
-	if(mundo.escadas[0].num_sala == policial.num_tela){
-		for (i=0; i<13; i++){
-			al_draw_filled_rectangle(mundo.escadas[0].degraus[i].x, mundo.escadas[0].degraus[i].y, mundo.escadas[0].degraus[i].x + mundo.escadas[0].degraus[i].largura, mundo.escadas[0].degraus[i].y_chao, al_map_rgb(255,255,255));
+	for (j=0; j<=2; j+=2){
+		if(mundo.escadas[j].num_sala == policial.num_tela){
+			for (i=0; i<13; i++){
+				al_draw_filled_rectangle(mundo.escadas[j].degraus[i].x, mundo.escadas[j].degraus[i].y, mundo.escadas[j].degraus[i].x + mundo.escadas[j].degraus[i].largura, mundo.escadas[j].degraus[i].y_chao, al_map_rgb(255,255,255));
+			}
 		}
-		// corrimao
-		al_draw_bitmap(mundo.escadas[0].imagem, mundo.escadas[0].x-18, mundo.escadas[0].y-2, 1);
+	}
+	if(mundo.escadas[0].num_sala == policial.num_tela){
+		// corrimao da escada 0
+		float x1 = 1.1*mundo.escadas[0].degraus[0].largura, y1 = mundo.escadas[0].pe.y_chao; // vértice no ângulo reto
+    	float x2 =  mundo.escadas[0].largura + 2.5*mundo.escadas[0].degraus[0].largura, y2 = mundo.escadas[0].pe.y_chao; // vértice no final da base
+    	float x3 = 1.1*mundo.escadas[0].degraus[0].largura, y3 = mundo.escadas[0].teto.y; // vértice da altura
+		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		//al_draw_bitmap(mundo.escadas[0].imagem, mundo.escadas[0].x-18, mundo.escadas[0].y-2, 1);
+	}
+	if(mundo.escadas[2].num_sala == policial.num_tela){
+		// corrimao da escada 2
+    	float x1 = 1.1*mundo.escadas[2].degraus[0].largura, y1 = mundo.escadas[2].pe.y_chao;
+    	float x2 =  mundo.escadas[2].largura + 2.5*mundo.escadas[2].degraus[0].largura, y2 = mundo.escadas[2].pe.y_chao;
+    	float x3 = 1.1*mundo.escadas[2].degraus[0].largura, y3 = mundo.escadas[2].teto.y;
+		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		// al_draw_bitmap(mundo.escadas[2].imagem, mundo.escadas[2].x-18, mundo.escadas[2].y-2, 1);
 	}
 	// --------------------------------------------------------------------------------------------
 
@@ -952,9 +976,21 @@ int main(int argc, char **argv){
     }
 
 	// imagem do corrimao da escada rolante
-	ALLEGRO_BITMAP *imagem_corrimao = al_load_bitmap("../../imagens_cenario/corrimao.png");
-	if (!imagem_corrimao) {
-        fprintf(stderr, "Falha ao carregar a imagem do corrimao!\n");
+	ALLEGRO_BITMAP *imagem_corrimao0 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao0) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 0!\n");
+        return -1;
+    }
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao1 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao1) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 1!\n");
+        return -1;
+    }
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao2 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao2) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 2!\n");
         return -1;
     }
 
@@ -1031,7 +1067,7 @@ int main(int argc, char **argv){
 	Personagem ladrao;
 	Mundo mundo;
 
-	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_corrimao);
+	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_corrimao0, imagem_corrimao1, imagem_corrimao2);
 
 	// ---------------------------------------------------------------------------------------
 	
@@ -1070,7 +1106,7 @@ int main(int argc, char **argv){
 				atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
 				atualizar_posicao_ladrao(&ladrao, policial);
 				atualiza_posicao_elevador(&mundo, tempo);
-				atualiza_posicao_escada(&mundo, tempo);
+				atualiza_posicao_escada(&mundo, tempo, policial);
 			}
 
 			//desenha tudo
@@ -1117,7 +1153,9 @@ int main(int argc, char **argv){
 	al_destroy_bitmap(imagem_cidade);
 	al_destroy_bitmap(imagem_policial);
 	al_destroy_bitmap(imagem_ladrao);
-	al_destroy_bitmap(imagem_corrimao);
+	al_destroy_bitmap(imagem_corrimao0);
+	al_destroy_bitmap(imagem_corrimao1);
+	al_destroy_bitmap(imagem_corrimao2);
  
 	return 0;
 
