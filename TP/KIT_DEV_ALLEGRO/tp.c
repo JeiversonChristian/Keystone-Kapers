@@ -160,8 +160,8 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).imagem = imagem_ladrao;
 	(*ladrao).largura = al_get_bitmap_width(imagem_ladrao);
 	(*ladrao).altura = al_get_bitmap_height(imagem_ladrao);
-	(*ladrao).x = SCREEN_W/2 - (*ladrao).largura/2;; // no meio do andar
-	(*ladrao).x_global = 1*SCREEN_W + (*ladrao).x; // na 3ª sala (tela)
+	(*ladrao).x = SCREEN_W/4 - (*ladrao).largura/2;; // 1/4 de um do andar
+	(*ladrao).x_global = 0*SCREEN_W + (*ladrao).x; // na 4ª sala (tela)
 	(*ladrao).y = 4*SCREEN_H/6.0 - (*ladrao).altura; // andar do meio
 	(*ladrao).vx = 3.0; // ligeiramente mais lento que o policial
 	(*policial).vy = 0; // pra não pular mesmo
@@ -668,7 +668,7 @@ void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 }
 
 void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
-	if (tempo % (60/12) == 0){
+	if (tempo % (60/24) == 0){
 		int i;
 		int j;
 		int num_teto;
@@ -793,8 +793,12 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 		for (i=0; i<13; i++){
 			al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));		
 		}
-		// corrimao
-		al_draw_bitmap(mundo.escadas[1].imagem, mundo.escadas[1].x+5, mundo.escadas[1].y-3, 0);
+		// corrimao da escada 1
+		float x1 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y2 = mundo.escadas[1].pe.y_chao; // vértice no ângulo reto
+    	float x2 =  mundo.escadas[1].x+5, y1 = mundo.escadas[1].pe.y_chao; // vértice no final da base
+    	float x3 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y3 = mundo.escadas[1].teto.y; // vértice da altura
+		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		//al_draw_bitmap(mundo.escadas[1].imagem, mundo.escadas[1].x+5, mundo.escadas[1].y-3, 0);
 	}
 	// --------------------------------------------------------------------------------------------
 	// escada 0 -> 4ª tela, 1º andar
@@ -1111,7 +1115,7 @@ int main(int argc, char **argv){
 			desenhar_ladrao(ladrao, policial);
 
 			// escreve o tempo que falta no topo
-			 al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %d s", 40 - tempo_simulado);
+			 al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %d s", 60 - tempo_simulado);
 
 			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
@@ -1123,8 +1127,8 @@ int main(int argc, char **argv){
 					tempo_simulado += 1;
 				}
 
-			// reseta o tempo a cada 40 segundos
-			if (tempo_simulado >= 40){
+			// verificar se acabaou o jogo
+			if (tempo_simulado >= 60){
 				// finalizar jogo, status perdeu
 			}			
 		}
