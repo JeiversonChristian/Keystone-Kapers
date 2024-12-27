@@ -17,13 +17,12 @@
 
 typedef struct Tecla{
 	int espaco;
-	int d; // direita
-	int a; // esquerda
-	int w; // cima
-	int s; // baixo
-	int p; // pause
-	int o; // play
-	int i; // re-iniciar
+	int d;
+	int a;
+	int w;
+	int s;
+	int p;
+	int o;
 }Tecla;
 
 typedef struct Personagem{
@@ -49,8 +48,6 @@ typedef struct Personagem{
 	int escada_num; // de controle em conjunto com dentro_escada
 	int degrau_num; // de controle em conjunto com dentro_escada
 	int na_lama; // variável de controle
-	int ganhou; // variável de controle
-	int perdeu; // variável de controle
 }Personagem;
 
 typedef struct Elevador{
@@ -101,6 +98,7 @@ typedef struct Escada{
 	float x;
 	float y;
 	float largura;
+	ALLEGRO_BITMAP *imagem; // só do corrimao
 }Escada;
 
 typedef struct Mundo{
@@ -126,7 +124,7 @@ const int TEMPO_LIMITE = 80;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade){
+void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_corrimao0, ALLEGRO_BITMAP *imagem_corrimao1, ALLEGRO_BITMAP *imagem_corrimao2){
 	int i;
 	int j;
 
@@ -139,7 +137,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*teclas).s = 0;
 	(*teclas).p = 0;
 	(*teclas).o = 0;
-	(*teclas).i = 0;
 
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
@@ -166,8 +163,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).escada_num = -1; // nenhum
 	(*ladrao).degrau_num = -1; // nenhum
 	(*ladrao).na_lama = 0;
-	(*ladrao).ganhou = 0;
-	(*ladrao).perdeu = 0;
 
 	// Policial
 	(*policial).imagem = imagem_policial;
@@ -192,12 +187,10 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).escada_num = -1; // nenhum
 	(*policial).degrau_num = -1; // nenhum
 	(*policial).na_lama = 0;
-	(*policial).ganhou = 0;
-	(*policial).perdeu = 0;
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
-	(*mundo).g = 25.0; 
+	(*mundo).g = 25.0; // valor alto, pra lógica do pulo
 	(*mundo).dt = 5.0/FPS;
 	
 	// -> elevador
@@ -274,6 +267,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// ------------------------------------------------------------------------------------------------
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
+	(*mundo).escadas[1].imagem = imagem_corrimao1;
 
 	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
@@ -330,6 +324,11 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	for (j=0; j<=2; j+=2){
 		(*mundo).escadas[j].num_sala = 4;
 		(*mundo).escadas[j].andar = 1+j;
+		if(j==0)
+			(*mundo).escadas[j].imagem = imagem_corrimao0;
+		else
+			(*mundo).escadas[j].imagem = imagem_corrimao2;
+
 		(*mundo).escadas[j].degraus[12].largura = (*policial).largura/2;
 		(*mundo).escadas[j].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
 		(*mundo).escadas[j].degraus[12].x_global = 0;
@@ -389,26 +388,13 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// ------------------------------------------------------------------------------------------------
 }
 
-void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
+void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
+	// lama
 	int i;
 	int j;
-
-	// policia_ladrao
-	int tPL = 21; // tolerancia para policia ladrao
-	if ((*policial).andar == (*ladrao).andar && ((*policial).num_tela == (*ladrao).num_tela)){
-		if ( ((*policial).x_global >= (*ladrao).x_global && (*policial).x_global <= (*ladrao).x_global + (*ladrao).largura - tPL) || ((*policial).x_global + (*policial).largura >= (*ladrao).x_global + tPL && (*policial).x_global + (*policial).largura <= (*ladrao).x_global + (*ladrao).largura) ){
-			(*policial).ganhou = 1;
-			(*ladrao).perdeu = 1;
-			(*policial).pode_andar = 0;
-			(*policial).pode_pular = 0;
-			(*ladrao).pode_andar = 0;
-		}
-	}
-	
-	// lama
-	int tL = 10; // tolerancia para lama
+	int t = 10; // tolerancia
 	for(i=0; i<6; i++){
-		if ( (((*policial).x_global > mundo.lamas[i].x_global && (*policial).x_global < mundo.lamas[i].x_global + mundo.lamas[i].largura - tL) || (((*policial).x_global + (*policial).largura > mundo.lamas[i].x_global + tL && (*policial).x_global + (*policial).largura < mundo.lamas[i].x_global + mundo.lamas[i].largura))) && mundo.lamas[i].andar == (*policial).andar && (*policial).pulando == 0){
+		if ( (((*policial).x_global > mundo.lamas[i].x_global && (*policial).x_global < mundo.lamas[i].x_global + mundo.lamas[i].largura - t) || (((*policial).x_global + (*policial).largura > mundo.lamas[i].x_global + t && (*policial).x_global + (*policial).largura < mundo.lamas[i].x_global + mundo.lamas[i].largura))) && mundo.lamas[i].andar == (*policial).andar && (*policial).pulando == 0){
 			(*policial).vx = (*policial).vx_inicial/6;
 			(*policial).na_lama = 1;
 			break; // ao se achar na lama, esteje na lama até não estar mais
@@ -418,98 +404,6 @@ void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas
 			(*policial).na_lama = 0;
 		}
 	}
-
-	// elevador
-	if (teclas.w == 1){
-		if ((*policial).pode_andar == 1 && (*policial).dentro_elevador == 0){
-			if ((*policial).x_global >= mundo.elevador.x_global && (*policial).x_global + (*policial).largura <= mundo.elevador.x_global + mundo.elevador.largura){
-				if ((*policial).andar == mundo.elevador.andar && mundo.elevador.porta_aberta == 1){
-					(*policial).pode_pular = 0;
-					(*policial).pode_andar = 0;
-					(*policial).dentro_elevador = 1;
-					(*policial).y -= (*policial).altura/8;
-				}
-			}
-		}
-	}
-	if (teclas.s == 1){
-		if((*policial).dentro_elevador == 1 && mundo.elevador.porta_aberta == 1){
-			(*policial).pode_pular = 1;
-			(*policial).pode_andar = 1;
-			(*policial).dentro_elevador = 0;
-			(*policial).y += (*policial).altura/8;
-		}
-	}
-	// sobe ou desce com o elevador.
-	if ((*policial).dentro_elevador == 1){
-		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
-		(*policial).y_chao = mundo.elevador.y_chao_porta;
-		(*policial).andar = mundo.elevador.andar;
-	}
-
-	// escada rolante
-	for (j=0; j<=2; j++){
-		if((*policial).dentro_escada==1){
-			break; // pra não ir pra dentro da outra escada
-		}
-		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
-			// está dentro da regição da escada
-			(*policial).dentro_escada = 1;
-			(*policial).escada_num = j;
-
-			for (i=0; i<=12; i++){
-				if(j == 1){
-					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				if(j == 0 || j == 2){
-					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				
-			}
-		}
-	}
-	//subir
-	if((*policial).dentro_escada == 1){
-		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
-		(*policial).y = (*policial).y_chao - (*policial).altura;
-		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
-		(*policial).x = (int)(*policial).x_global % SCREEN_W;
-		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
-			(*policial).dentro_escada = 0;
-			(*policial).escada_num = -1;
-			(*policial).degrau_num = -1;
-			(*policial).pode_andar = 1;
-			(*policial).pode_pular = 1;
-			(*policial).andar += 1;
-		}
-	}
-}
-
-void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo){
 	
 	// andar para esquerda
 	if (teclas.a == 1 && teclas.d == 0 && (*policial).pode_andar == 1){
@@ -578,6 +472,95 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		}
 	}
 
+	// entrar e sair do elevador
+	if (teclas.w == 1){
+		if ((*policial).pode_andar == 1 && (*policial).dentro_elevador == 0){
+			if ((*policial).x_global >= mundo.elevador.x_global && (*policial).x_global + (*policial).largura <= mundo.elevador.x_global + mundo.elevador.largura){
+				if ((*policial).andar == mundo.elevador.andar && mundo.elevador.porta_aberta == 1){
+					(*policial).pode_pular = 0;
+					(*policial).pode_andar = 0;
+					(*policial).dentro_elevador = 1;
+					(*policial).y -= (*policial).altura/8;
+				}
+			}
+		}
+	}
+	if (teclas.s == 1){
+		if((*policial).dentro_elevador == 1 && mundo.elevador.porta_aberta == 1){
+			(*policial).pode_pular = 1;
+			(*policial).pode_andar = 1;
+			(*policial).dentro_elevador = 0;
+			(*policial).y += (*policial).altura/8;
+		}
+	}
+	// sobe ou desce com o elevador.
+	if ((*policial).dentro_elevador == 1){
+		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
+		(*policial).y_chao = mundo.elevador.y_chao_porta;
+		(*policial).andar = mundo.elevador.andar;
+	}
+
+	// usar escada rolante
+	for (j=0; j<=2; j++){
+		if((*policial).dentro_escada==1){
+			break; // pra não ir pra dentro da outra escada
+		}
+		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
+			// está dentro da regição da escada
+			(*policial).dentro_escada = 1;
+			(*policial).escada_num = j;
+
+			for (i=0; i<=12; i++){
+				if(j == 1){
+					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
+				}
+				if(j == 0 || j == 2){
+					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+	}
+	//subir
+	if((*policial).dentro_escada == 1){
+		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
+		(*policial).y = (*policial).y_chao - (*policial).altura;
+		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
+		(*policial).x = (int)(*policial).x_global % SCREEN_W;
+		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
+			(*policial).dentro_escada = 0;
+			(*policial).escada_num = -1;
+			(*policial).degrau_num = -1;
+			(*policial).pode_andar = 1;
+			(*policial).pode_pular = 1;
+			(*policial).andar += 1;
+		}
+	}
+
 	// mudar de tela
 	if ((*policial).x_global >= 3*SCREEN_W && (*policial).x_global <= 4*SCREEN_W){
 		(*policial).num_tela = 1;
@@ -595,20 +578,14 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	// foge ladrão
-	// se o policial tiver na mesma tela e andar do ladrão, ele foge pro outro lado com 25% a mais de velocidade
-	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
+	// o policial tiver na frente do ladrão, ele foge pro outro lado
+	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 0;
-		(*ladrao).vx = 1.25*(*ladrao).vx_inicial;
 	}
-	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
+	else if (policial.x_global > (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0){
 		(*ladrao).orientacao = 1;
-		(*ladrao).vx = 1.25*(*ladrao).vx_inicial;
-	}
-	else {
-		(*ladrao).vx = (*ladrao).vx_inicial;
 	}
 
-	// andando
 	int direcao_andar;
 	if ((*ladrao).orientacao == 0){
 		direcao_andar = 1;
@@ -616,10 +593,8 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	else if ((*ladrao).orientacao == 1){
 		direcao_andar = -1;
 	}
-	if((*ladrao).pode_andar == 1){
-		(*ladrao).x_global += (*ladrao).vx * direcao_andar;
-		(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
-	}
+	(*ladrao).x_global += (*ladrao).vx * direcao_andar;
+	(*ladrao).x = (int)(*ladrao).x_global % SCREEN_W;
 
 	// mudando de andar ao se chegar na parede esquerda
 	if ((*ladrao).x_global + (*ladrao).largura <= 0){
@@ -836,6 +811,7 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
     	float x2 =  mundo.escadas[1].x+5, y1 = mundo.escadas[1].pe.y_chao; // vértice no final da base
     	float x3 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y3 = mundo.escadas[1].teto.y; // vértice da altura
 		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		//al_draw_bitmap(mundo.escadas[1].imagem, mundo.escadas[1].x+5, mundo.escadas[1].y-3, 0);
 	}
 	// --------------------------------------------------------------------------------------------
 	// escada 0 -> 4ª tela, 1º andar
@@ -854,6 +830,7 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
     	float x2 =  mundo.escadas[0].largura + 2.5*mundo.escadas[0].degraus[0].largura, y2 = mundo.escadas[0].pe.y_chao; // vértice no final da base
     	float x3 = 1.1*mundo.escadas[0].degraus[0].largura, y3 = mundo.escadas[0].teto.y; // vértice da altura
 		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		//al_draw_bitmap(mundo.escadas[0].imagem, mundo.escadas[0].x-18, mundo.escadas[0].y-2, 1);
 	}
 	if(mundo.escadas[2].num_sala == policial.num_tela){
 		// corrimao da escada 2
@@ -861,6 +838,7 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
     	float x2 =  mundo.escadas[2].largura + 2.5*mundo.escadas[2].degraus[0].largura, y2 = mundo.escadas[2].pe.y_chao;
     	float x3 = 1.1*mundo.escadas[2].degraus[0].largura, y3 = mundo.escadas[2].teto.y;
 		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		// al_draw_bitmap(mundo.escadas[2].imagem, mundo.escadas[2].x-18, mundo.escadas[2].y-2, 1);
 	}
 	// --------------------------------------------------------------------------------------------
 
@@ -958,10 +936,6 @@ void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado) {
 	if (ev.keyboard.keycode == ALLEGRO_KEY_O) {
 		(*teclas).o = pressionado;
     }
-
-	if (ev.keyboard.keycode == ALLEGRO_KEY_I) {
-		(*teclas).i = pressionado;
-    }
 }
 // ---------------------------------------------------------------------------------------------------
 
@@ -1015,6 +989,25 @@ int main(int argc, char **argv){
 	ALLEGRO_BITMAP *imagem_ladrao = al_load_bitmap("../../imagens_personagens/harry_hooligan_pos_inicial.png");
 	if (!imagem_ladrao) {
         fprintf(stderr, "Falha ao carregar a imagem do harry hooligan!\n");
+        return -1;
+    }
+
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao0 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao0) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 0!\n");
+        return -1;
+    }
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao1 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao1) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 1!\n");
+        return -1;
+    }
+	// imagem do corrimao da escada rolante
+	ALLEGRO_BITMAP *imagem_corrimao2 = al_load_bitmap("../../imagens_cenario/corrimao.png");
+	if (!imagem_corrimao2) {
+        fprintf(stderr, "Falha ao carregar a imagem do corrimao 2!\n");
         return -1;
     }
 
@@ -1091,7 +1084,7 @@ int main(int argc, char **argv){
 	Personagem ladrao;
 	Mundo mundo;
 
-	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade);
+	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_corrimao0, imagem_corrimao1, imagem_corrimao2);
 
 	// ---------------------------------------------------------------------------------------
 	
@@ -1105,10 +1098,10 @@ int main(int argc, char **argv){
 	while(playing) 
 	{
 		ALLEGRO_EVENT ev;
-		// espera por um evento e o armazena na variavel de evento ev
+		//espera por um evento e o armazena na variavel de evento ev
 		al_wait_for_event(event_queue, &ev);
 
-		// se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
+		//se o tipo de evento for um evento do temporizador, ou seja, se o tempo passou de t para t+1
 		if(ev.type == ALLEGRO_EVENT_TIMER) {
 
 			// verifica se pausou
@@ -1119,30 +1112,18 @@ int main(int argc, char **argv){
 				pause = 0;
 			}
 
-			// verifica se reinicializou
-			if (teclas.i == 1){
-				inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade);
-				playing = 1;
-				pause = 0;
-				tempo = 0;
-				tempo_simulado = 0;
-			}
-
-			// limpa a tela
+			//limpa a tela
 			al_clear_to_color(al_map_rgb(0,0,0));
-			
-			if (pause == 0) {
-				// verifica interações
-				verificar_interacoes(&policial, &ladrao, teclas, mundo);
+			//atualiza posicões de tudo
 
-				// atualiza posicões de tudo
+			if (pause == 0) {
 				atualizar_posicao_policial(&policial, &ladrao, teclas, mundo);
 				atualizar_posicao_ladrao(&ladrao, policial);
 				atualiza_posicao_elevador(&mundo, tempo);
 				atualiza_posicao_escada(&mundo, tempo, policial);
 			}
 
-			// desenha tudo
+			//desenha tudo
 			desenhar_cenario(mundo, policial);
 			desenhar_policial(policial, mundo);
 			desenhar_ladrao(ladrao, policial);
@@ -1150,7 +1131,7 @@ int main(int argc, char **argv){
 			// escreve o tempo que falta no topo
 			 al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %d s", TEMPO_LIMITE - tempo_simulado);
 
-			// atualiza a tela (quando houver algo para mostrar)
+			//atualiza a tela (quando houver algo para mostrar)
 			al_flip_display();
 
 			// registra tempo passado
@@ -1196,6 +1177,9 @@ int main(int argc, char **argv){
 	al_destroy_bitmap(imagem_cidade);
 	al_destroy_bitmap(imagem_policial);
 	al_destroy_bitmap(imagem_ladrao);
+	al_destroy_bitmap(imagem_corrimao0);
+	al_destroy_bitmap(imagem_corrimao1);
+	al_destroy_bitmap(imagem_corrimao2);
  
 	return 0;
 
