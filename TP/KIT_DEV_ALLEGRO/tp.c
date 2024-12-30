@@ -943,7 +943,7 @@ void desenhar_tela_final(Personagem policial, Personagem ladrao, int tempo_captu
 	if (policial.ganhou == 1){		
 		al_draw_bitmap(policial.imagem_vitoria, 0, 0, 0);
 		al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W -10, 10, ALLEGRO_ALIGN_RIGHT, "Parabéns, policial!");
-		al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W -10, 45, ALLEGRO_ALIGN_RIGHT, "Tempo de captura: %d s", TEMPO_LIMITE - tempo_captura);
+		al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W -10, 45, ALLEGRO_ALIGN_RIGHT, "Tempo de captura: %ds", tempo_captura);
 	}
 	else if (ladrao.ganhou == 1){
 		al_draw_bitmap(ladrao.imagem_vitoria, 0, 0, 0);
@@ -1152,13 +1152,15 @@ int main(int argc, char **argv){
 				pause = 0;
 			}
 
-			// verifica se reinicializou
+			// reinicializar
 			if (teclas.i == 1){
 				inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso);
 				playing = 1;
 				pause = 0;
 				tempo = 0;
 				tempo_simulado = 0;
+				policial.ganhou = 0;
+				ladrao.ganhou = 0;
 			}
 
 			// limpa a tela
@@ -1181,8 +1183,9 @@ int main(int argc, char **argv){
 				desenhar_policial(policial, mundo);
 				desenhar_ladrao(ladrao, policial);
 
-				// escreve o tempo que falta no topo
-				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %d s", TEMPO_LIMITE - tempo_simulado);
+				// escreve o tempo
+				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %ds", TEMPO_LIMITE - tempo_simulado);
+				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 42, ALLEGRO_ALIGN_LEFT, "Tempo que já passou: %ds", tempo_simulado);
 
 				// registra tempo passado
 				if (pause == 0 && policial.ganhou == 0 && ladrao.ganhou == 0){
