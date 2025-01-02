@@ -16,7 +16,7 @@
 // Structs
 
 typedef struct Tecla{
-	int espaco;
+	int espaco; // pular
 	int d; // direita
 	int a; // esquerda
 	int w; // cima
@@ -130,7 +130,7 @@ const int TEMPO_LIMITE = 80;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_policial_vitorioso, ALLEGRO_BITMAP *imagem_ladrao_vitorioso, ALLEGRO_BITMAP *imagem_policial2, ALLEGRO_BITMAP *imagem_policial3, ALLEGRO_BITMAP *imagem_policial4){
+void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_policial_vitorioso, ALLEGRO_BITMAP *imagem_ladrao_vitorioso, ALLEGRO_BITMAP *imagem_policial2, ALLEGRO_BITMAP *imagem_policial3, ALLEGRO_BITMAP *imagem_policial4, ALLEGRO_BITMAP *imagem_ladrao2, ALLEGRO_BITMAP *imagem_ladrao3, ALLEGRO_BITMAP *imagem_ladrao4){
 	int i;
 	int j;
 
@@ -148,6 +148,12 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// Ladrão
 	(*ladrao).imagem = imagem_ladrao;
 	(*ladrao).imagem_vitoria = imagem_ladrao_vitorioso;
+	(*ladrao).imagens[0] = imagem_ladrao;
+	(*ladrao).imagens[1] = imagem_ladrao2;
+	(*ladrao).imagens[2] = imagem_ladrao3;
+	(*ladrao).imagens[3] = imagem_ladrao4;
+	(*ladrao).sentido_anima = 1; // indo da esquerda pra direita nas imagens
+	(*ladrao).imagem_atual = 0;
 	(*ladrao).largura = al_get_bitmap_width(imagem_ladrao);
 	(*ladrao).altura = al_get_bitmap_height(imagem_ladrao);
 	(*ladrao).x = SCREEN_W/4 - (*ladrao).largura/2;; // 1/4 de um do andar
@@ -548,6 +554,21 @@ void animar_policial(Personagem *policial, int tempo){
 		(*policial).imagem = (*policial).imagens[3];
 	else if ((*policial).andando == 0){
 		(*policial).imagem = (*policial).imagens[0];
+	}
+}
+
+void animar_ladrao(Personagem *ladrao, int tempo){
+	// animação dele correndo
+	if (tempo % ((int)FPS/16) == 0){
+		if((*ladrao).andando == 1){
+			if ((*ladrao).imagem_atual == 0)
+				(*ladrao).sentido_anima = 1;
+			else if ((*ladrao).imagem_atual == 3)
+				(*ladrao).sentido_anima = -1;
+
+			(*ladrao).imagem_atual += (*ladrao).sentido_anima;
+			(*ladrao).imagem = (*ladrao).imagens[(*ladrao).imagem_atual];
+		}
 	}
 }
 
@@ -1112,6 +1133,21 @@ int main(int argc, char **argv){
         fprintf(stderr, "Falha ao carregar a imagem do harry hooligan!\n");
         return -1;
     }
+	ALLEGRO_BITMAP *imagem_ladrao2 = al_load_bitmap("../../imagens_personagens/harry_hooligan_2.png");
+	if (!imagem_ladrao2) {
+        fprintf(stderr, "Falha ao carregar a imagem 2 do harry hooligan!\n");
+        return -1;
+    }
+	ALLEGRO_BITMAP *imagem_ladrao3 = al_load_bitmap("../../imagens_personagens/harry_hooligan_3.png");
+	if (!imagem_ladrao3) {
+        fprintf(stderr, "Falha ao carregar a imagem 3 do harry hooligan!\n");
+        return -1;
+    }
+	ALLEGRO_BITMAP *imagem_ladrao4 = al_load_bitmap("../../imagens_personagens/harry_hooligan_4.png");
+	if (!imagem_ladrao4) {
+        fprintf(stderr, "Falha ao carregar a imagem 4 do harry hooligan!\n");
+        return -1;
+    }
 
 	// imagem da tela final do policial vitorioso
 	ALLEGRO_BITMAP *imagem_policial_vitorioso = al_load_bitmap("../../imagens_tela_final/tela_final_policial.png");
@@ -1200,7 +1236,7 @@ int main(int argc, char **argv){
 	Personagem ladrao;
 	Mundo mundo;
 
-	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4);
+	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4);
 
 	// ---------------------------------------------------------------------------------------
 
@@ -1240,7 +1276,7 @@ int main(int argc, char **argv){
 
 			// reinicializar
 			if (teclas.i == 1){
-				inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4);
+				inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4);
 				playing = 1;
 				pause = 0;
 				tempo = 0;
@@ -1266,6 +1302,7 @@ int main(int argc, char **argv){
 
 					// anima personagens
 					animar_policial(&policial,  tempo);
+					animar_ladrao(&ladrao, tempo);
 				}
 
 				// desenha tudo
@@ -1332,8 +1369,11 @@ int main(int argc, char **argv){
 	al_destroy_bitmap(imagem_policial2);
 	al_destroy_bitmap(imagem_policial3);
 	al_destroy_bitmap(imagem_policial4);
-	al_destroy_bitmap(imagem_ladrao);
 	al_destroy_bitmap(imagem_policial_vitorioso);
+	al_destroy_bitmap(imagem_ladrao);
+	al_destroy_bitmap(imagem_ladrao2);
+	al_destroy_bitmap(imagem_ladrao3);
+	al_destroy_bitmap(imagem_ladrao4);
 	al_destroy_bitmap(imagem_ladrao_vitorioso);
  
 	return 0;
