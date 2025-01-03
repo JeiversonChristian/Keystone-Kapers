@@ -415,17 +415,19 @@ void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas
 	int tPL = 21; // tolerancia para policia ladrao
 	if ((*policial).andar == (*ladrao).andar && ((*policial).num_tela == (*ladrao).num_tela)){
 		if ( ((*policial).x_global >= (*ladrao).x_global && (*policial).x_global <= (*ladrao).x_global + (*ladrao).largura - tPL) || ((*policial).x_global + (*policial).largura >= (*ladrao).x_global + tPL && (*policial).x_global + (*policial).largura <= (*ladrao).x_global + (*ladrao).largura) ){
-			*tempo_captura = tempo_simulado;
-			(*policial).ganhou = 1;
-			(*policial).pode_andar = 0;
-			(*policial).pode_pular = 0;
-			(*ladrao).pode_andar = 0;
-			if(*tempo_captura < *record){
-				*record = *tempo_captura;
-				FILE *arq = fopen("record.txt", "w");
-				fprintf(arq, "%d", *record);
-				fclose(arq);
-			}
+			if((*policial).dentro_elevador == 0){
+				*tempo_captura = tempo_simulado;
+				(*policial).ganhou = 1;
+				(*policial).pode_andar = 0;
+				(*policial).pode_pular = 0;
+				(*ladrao).pode_andar = 0;
+				if(*tempo_captura < *record){
+					*record = *tempo_captura;
+					FILE *arq = fopen("record.txt", "w");
+					fprintf(arq, "%d", *record);
+					fclose(arq);
+				}
+			}		
 		}
 	}
 	
@@ -793,7 +795,7 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 		int j;
 		int num_teto;
 		int num_pe;
-		if (policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala){
+		if (policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala && policial.dentro_elevador == 0){
 
 			// escada 1 -> 1ª tela, 2º andar
 			// --------------------------------------------------------------------------------------------
@@ -842,7 +844,7 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 		// escada 2 -> 4ª tela, 3º andar
 		// --------------------------------------------------------------------------------------------
 		for (j=0; j<=2; j+=2){
-			if (policial.andar == (*mundo).escadas[j].andar && policial.num_tela == (*mundo).escadas[j].num_sala){
+			if (policial.andar == (*mundo).escadas[j].andar && policial.num_tela == (*mundo).escadas[j].num_sala && policial.dentro_elevador == 0){
 				num_teto = (*mundo).escadas[j].teto.num;
 				num_pe = (*mundo).escadas[j].pe.num;
 
@@ -1328,7 +1330,10 @@ int main(int argc, char **argv){
 				}
 			}
 			else{
-				// mostrando quem ganhou
+				//pausa do jogo
+				teclas.p = 1;
+
+				// mostra quem ganhou
 				desenhar_tela_final(policial, ladrao, tempo_captura, font);
 			}
 			
