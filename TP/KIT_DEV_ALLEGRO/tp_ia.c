@@ -1,4 +1,4 @@
-// versao 01
+// versao 02
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -70,7 +70,7 @@ typedef struct Personagem{
 	float inputs[26];
 	float pesos[26];
 	float vies;
-	float pontos;
+	int pontos;
 	float x_abs;
 	float dist_x_ladrao_anterior;
 	float dist_x_ladrao;
@@ -279,14 +279,14 @@ void calcular_pontos(Personagem *policial){
 		(*policial).pontos += 1;
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
-		(*policial).pontos += -1;
+		(*policial).pontos -= 1;
 	}
 
 	if ((*policial).dist_y_ladrao < (*policial).dist_y_ladrao_anterior){
 		(*policial).pontos += 1;
 	}
 	else if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-		(*policial).pontos += -1;
+		(*policial).pontos -= 1;
 	}
 	
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
@@ -1802,11 +1802,12 @@ int main(int argc, char **argv){
 					animar_policial(&policial,  tempo);
 					animar_ladrao(&ladrao, tempo);
 					
-					if (ia_jogando == 1)
+					if (ia_jogando == 1) {
 						calcular_inputs(&policial, ladrao, mundo);
 						calcular_input_final(&policial);
 						escolher_acao(policial.input_final, &teclas, &policial);
 						calcular_pontos(&policial);
+					}
 				}
 
 				// desenha tudo
@@ -1822,6 +1823,7 @@ int main(int argc, char **argv){
 				if (ia_jogando == 1){
 					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 10, ALLEGRO_ALIGN_RIGHT, "Geracao: %d", geracao);
 					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 42, ALLEGRO_ALIGN_RIGHT, "Policial numero: %d", num_policial);
+					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 74, ALLEGRO_ALIGN_RIGHT, "Pontos: %d", policial.pontos);
 				}
 
 				// registra tempo passado
