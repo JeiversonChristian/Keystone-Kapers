@@ -1950,12 +1950,12 @@ int main(int argc, char **argv){
 							melhor_3pontuacao = melhor_2pontuacao;
 							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
-								pesos_3melhor[z] = policial.pesos[z];
+								pesos_3melhor[z] = pesos_2melhor[z];
 							}
 							melhor_2pontuacao = melhor_pontuacao;
 							vies_2melhor = vies_melhor;
 							for (z=0; z<26; z++){
-								pesos_2melhor[z] = policial.pesos[z];
+								pesos_2melhor[z] = pesos_melhor[z];
 							}
 							melhor_pontuacao = policial.pontos;
 							vies_melhor = policial.vies;
@@ -2030,7 +2030,7 @@ int main(int argc, char **argv){
 							melhor_3pontuacao = policial.pontos;
 							vies_3melhor = policial.vies;
 							for (z=0; z<26; z++){
-								pesos_3melhor[z] = policial.pesos[z];
+								pesos_3melhor[z] = pesos_2melhor[z];
 							}
 							melhor_2pontuacao = policial.pontos;
 							vies_2melhor = policial.vies;
