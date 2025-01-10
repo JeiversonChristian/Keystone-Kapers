@@ -1,4 +1,4 @@
-// versao 05
+// versao 06
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -72,10 +72,13 @@ typedef struct Personagem{
 	float vies;
 	int pontos;
 	float x_abs;
+	float dist_x_inicial;
 	float dist_x_ladrao_anterior;
 	float dist_x_ladrao;
+	float menor_dist_x_ladrao;
 	float dist_y_ladrao_anterior;
 	float dist_y_ladrao;
+	float menor_dist_y_ladrao;
 	float num;
 	float geracao;
 }Personagem;
@@ -183,24 +186,70 @@ const int TEMPO_LIMITE = 80;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void mutar_policial(Personagem *policial, float pesos_melhor[26], float vies_melhor){
+void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2melhor[26], float pesos_3melhor[26], float vies_melhor, float vies_2melhor, float vies_3melhor, int num_max_policiais){
 	int i;
 	float mutar;
-	for (i=0; i<26; i++){
-		// valor aleatório no intervalo [0, 1]
+	if ((*policial).num == 1){
+		for (i=0; i<26; i++){
+			// valor aleatório no intervalo [0, 1]
+			mutar = (float)rand() / (float)RAND_MAX;
+			if (mutar >= 0.8){
+				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+			}
+			else {
+				(*policial).pesos[i] = pesos_melhor[i];
+			}
+		}
 		mutar = (float)rand() / (float)RAND_MAX;
 		if (mutar >= 0.8){
-			(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+			(*policial).vies = (float)rand() / (float)RAND_MAX;
 		}
 		else {
-			(*policial).pesos[i] = pesos_melhor[i];
+			(*policial).vies = vies_melhor;
 		}
 	}
-	mutar = (float)rand() / (float)RAND_MAX;
-	if (mutar >= 0.8){
-		(*policial).vies = (float)rand() / (float)RAND_MAX;
+	else if ((*policial).num == 2){
+		for (i=0; i<26; i++){
+			// valor aleatório no intervalo [0, 1]
+			mutar = (float)rand() / (float)RAND_MAX;
+			if (mutar >= 0.7){
+				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+			}
+			else {
+				(*policial).pesos[i] = pesos_2melhor[i];
+			}
+		}
+		mutar = (float)rand() / (float)RAND_MAX;
+		if (mutar >= 0.7){
+			(*policial).vies = (float)rand() / (float)RAND_MAX;
+		}
+		else {
+			(*policial).vies = vies_2melhor;
+		}
 	}
-	else {
+	else if ((*policial).num == 3){
+		for (i=0; i<26; i++){
+			// valor aleatório no intervalo [0, 1]
+			mutar = (float)rand() / (float)RAND_MAX;
+			if (mutar >= 0.6){
+				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+			}
+			else {
+				(*policial).pesos[i] = pesos_3melhor[i];
+			}
+		}
+		mutar = (float)rand() / (float)RAND_MAX;
+		if (mutar >= 0.6){
+			(*policial).vies = (float)rand() / (float)RAND_MAX;
+		}
+		else {
+			(*policial).vies = vies_3melhor;
+		}
+	}
+	else{
+		for (i=0; i<26; i++){
+			(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+		}
 		(*policial).vies = vies_melhor;
 	}
 }
@@ -274,7 +323,7 @@ float calcular_dist_policia_ladaro_y(Personagem policial, Personagem ladrao){
 	return abs(policial.andar - ladrao.andar);
 }
 
-void calcular_pontos(Personagem *policial){
+void calcular_pontos(Personagem *policial, Personagem ladrao){
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
 		(*policial).pontos += 5;
 	}
@@ -286,7 +335,7 @@ void calcular_pontos(Personagem *policial){
 		(*policial).pontos += 8;
 	}
 	else if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-		(*policial).pontos -= 7;
+		(*policial).pontos -= 3;
 	}
 	
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
@@ -296,7 +345,7 @@ void calcular_pontos(Personagem *policial){
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
 		if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-			(*policial).pontos -= 8;
+			(*policial).pontos -= 4;
 		}	
 	}
 
@@ -304,8 +353,29 @@ void calcular_pontos(Personagem *policial){
 		(*policial).pontos -= 1;
 	}
 
+
+	/*ifif(ladrao.ganhou == 1){
+		if ((*policial).dist_x_ladrao < (*policial).dist_x_inicial){
+			(*policial).pontos += 25;
+		}
+		else {
+			(*policial).pontos -= 20;
+		}
+
+		if((*policial).dist_x_ladrao < (*policial).menor_dist_x_ladrao)
+			(*policial).pontos += 25;
+		else if ((*policial).dist_x_ladrao > (*policial).menor_dist_x_ladrao)
+			(*policial).pontos -= 20;
+
+		// precisa corrigir o andar do ladrão quando ele ganha primeiro
+		((*policial).dist_y_ladrao < (*policial).menor_dist_y_ladrao)
+			(*policial).pontos += 25;
+		else if ((*policial).dist_y_ladrao > (*policial).menor_dist_y_ladrao)
+			(*policial).pontos -= 20;
+	}*/
+
 	if ((*policial).ganhou == 1){
-		(*policial).pontos += 50;
+		(*policial).pontos += 100;
 	}
 }
 
@@ -660,11 +730,14 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 		(*policial).quant_teclas = 5;
 		(*policial).pontos = 0;
 		calcular_x_abs(policial, ladrao);
-		(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
-		(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		(*policial).dist_x_inicial = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		(*policial).dist_x_ladrao_anterior = (*policial).dist_x_inicial;
+		(*policial).dist_x_ladrao = (*policial).dist_x_ladrao_anterior;
+		(*policial).menor_dist_x_ladrao = (*policial).dist_x_ladrao_anterior;
 		(*policial).dist_y_ladrao_anterior = calcular_dist_policia_ladaro_y(*policial, *ladrao);
-		(*policial).dist_y_ladrao = calcular_dist_policia_ladaro_y(*policial, *ladrao);
-		calcular_pontos(policial);
+		(*policial).dist_y_ladrao = (*policial).dist_y_ladrao_anterior;
+		(*policial).menor_dist_y_ladrao = (*policial).dist_y_ladrao_anterior;
+		calcular_pontos(policial, *ladrao);
 	}
 	// ------------------------------------------------------------------------------------------------	
 }
@@ -681,7 +754,7 @@ void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas
 				*tempo_captura = tempo_simulado;
 				(*policial).ganhou = 1;
 				if (ia_jogando == 1)
-					calcular_pontos(policial);
+					calcular_pontos(policial, *ladrao);
 				(*policial).pode_andar = 0;
 				(*policial).pode_pular = 0;
 				(*ladrao).pode_andar = 0;
@@ -1713,14 +1786,22 @@ int main(int argc, char **argv){
 	int num_policial = 1;
 	int ia_jogando = 1;
 	int geracao = 1;
-	int num_max_policiais = 5;
+	int num_max_policiais = 6;
 	int melhor_pontuacao = -32768;
+	int melhor_2pontuacao = -32768;
+	int melhor_3pontuacao = -32768;
 	float pesos_melhor[26];
+	float pesos_2melhor[26];
+	float pesos_3melhor[26];
 	int k;
 	for (k=0; k<26; k++){
-		pesos_melhor[26] = 0;
+		pesos_melhor[k] = 0;
+		pesos_2melhor[k] = 0;
+		pesos_3melhor[k] = 0;
 	}
 	float vies_melhor = 0;
+	float vies_2melhor = 0;
+	float vies_3melhor = 0;
 	// ---------------------------------------------------------------------------------------
 
 	//-------------------------- criação das structs -----------------------------------------
@@ -1805,6 +1886,10 @@ int main(int argc, char **argv){
 						calcular_x_abs(&policial, &ladrao);
 						(policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(policial, ladrao);
 						(policial).dist_y_ladrao = calcular_dist_policia_ladaro_y(policial, ladrao);
+						if ((policial).dist_x_ladrao < (policial).menor_dist_x_ladrao)
+							(policial).menor_dist_x_ladrao = (policial).dist_x_ladrao;
+						if ((policial).dist_y_ladrao < (policial).menor_dist_y_ladrao)
+							(policial).menor_dist_y_ladrao = (policial).dist_y_ladrao;
 					}
 
 					// anima personagens
@@ -1815,8 +1900,8 @@ int main(int argc, char **argv){
 						calcular_inputs(&policial, ladrao, mundo);
 						calcular_input_final(&policial);
 						escolher_acao(policial.input_final, &teclas, &policial);
-						if((tempo % (int)FPS)/2 == 0){
-							calcular_pontos(&policial);
+						if((tempo % (int)FPS) == 0){
+							calcular_pontos(&policial, ladrao);
 						}
 					}
 				}
@@ -1859,9 +1944,28 @@ int main(int argc, char **argv){
 					desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
 				else{
 					if (ladrao.ganhou == 1){
+						calcular_pontos(&policial, ladrao);
 						if (policial.pontos > melhor_pontuacao){
+							int z;
+							melhor_3pontuacao = melhor_2pontuacao;
+							vies_3melhor = vies_2melhor;
+							for (z=0; z<26; z++){
+								pesos_3melhor[z] = policial.pesos[z];
+							}
+							melhor_2pontuacao = melhor_pontuacao;
+							vies_2melhor = vies_melhor;
+							for (z=0; z<26; z++){
+								pesos_2melhor[z] = policial.pesos[z];
+							}
 							melhor_pontuacao = policial.pontos;
 							vies_melhor = policial.vies;
+							for (z=0; z<26; z++){
+								pesos_melhor[z] = policial.pesos[z];
+							}
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("1");
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
@@ -1873,12 +1977,200 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Melhores pesos:");
 							printf("\n");
-							int z;
 							for (z=0; z<26; z++){
-								pesos_melhor[z] = policial.pesos[z];
 								printf(" [%f] ", pesos_melhor[z]);
 							}
+							printf("########################################");
+							printf("\n");
+							
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("2");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("2o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("2o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("3");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("3o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("3o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
 						}
+						else if (policial.pontos > melhor_2pontuacao){
+							int z;
+							melhor_3pontuacao = policial.pontos;
+							vies_3melhor = policial.vies;
+							for (z=0; z<26; z++){
+								pesos_3melhor[z] = policial.pesos[z];
+							}
+							melhor_2pontuacao = policial.pontos;
+							vies_2melhor = policial.vies;
+							for (z=0; z<26; z++){
+								pesos_2melhor[z] = policial.pesos[z];
+							}
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("1");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+							
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("2");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("2o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("2o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("3");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("3o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("3o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+						}
+						else if (policial.pontos > melhor_3pontuacao){
+							int z;
+							melhor_3pontuacao = policial.pontos;
+							vies_3melhor = policial.vies;
+							for (z=0; z<26; z++){
+								pesos_3melhor[z] = policial.pesos[z];
+							}
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("1");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+							
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("2");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("2o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("2o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+
+							printf("\n");
+							printf("########################################");
+							printf("\n");
+							printf("3");
+							printf("\n");
+							printf("Geracao: %d", geracao);
+							printf("\n");
+							printf("Numero do policial: %d", num_policial);
+							printf("\n");
+							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("\n");
+							printf("3o Melhor vies: %f", vies_melhor);
+							printf("\n");
+							printf("3o Melhores pesos:");
+							printf("\n");
+							for (z=0; z<26; z++){
+								printf(" [%f] ", pesos_melhor[z]);
+							}
+							printf("########################################");
+							printf("\n");
+						}
+
 						if (policial.num < num_max_policiais){
 							num_policial += 1;
 						}
@@ -1896,7 +2188,7 @@ int main(int argc, char **argv){
 						ladrao.ganhou = 0;
 						
 						if(geracao > 1){
-							mutar_policial(&policial, pesos_melhor, vies_melhor);
+							mutar_policial(&policial, pesos_melhor, pesos_2melhor, pesos_3melhor,vies_melhor, vies_2melhor, vies_3melhor,num_max_policiais);
 						}
 					}
 					else if (policial.ganhou == 1){
