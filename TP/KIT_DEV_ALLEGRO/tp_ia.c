@@ -1784,6 +1784,9 @@ int main(int argc, char **argv){
 
 	// ------------------------- para IA -----------------------------------------------------
 	int num_policial = 1;
+	int num_melhor_policial = 1;
+	int num_2melhor_policial = 1;
+	int num_3melhor_policial = 1;
 	int ia_jogando = 1;
 	int geracao = 1;
 	int num_max_policiais = 6;
@@ -1947,16 +1950,19 @@ int main(int argc, char **argv){
 						calcular_pontos(&policial, ladrao);
 						if (policial.pontos > melhor_pontuacao){
 							int z;
+							num_3melhor_policial = num_2melhor_policial;
 							melhor_3pontuacao = melhor_2pontuacao;
 							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
 								pesos_3melhor[z] = pesos_2melhor[z];
 							}
+							num_2melhor_policial = num_melhor_policial;
 							melhor_2pontuacao = melhor_pontuacao;
 							vies_2melhor = vies_melhor;
 							for (z=0; z<26; z++){
 								pesos_2melhor[z] = pesos_melhor[z];
 							}
+							num_melhor_policial = policial.num;
 							melhor_pontuacao = policial.pontos;
 							vies_melhor = policial.vies;
 							for (z=0; z<26; z++){
@@ -1969,7 +1975,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
 							printf("Melhor pontuacao: %d", melhor_pontuacao);
 							printf("\n");
@@ -1991,7 +1997,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
 							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
@@ -2013,7 +2019,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
 							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
@@ -2030,11 +2036,13 @@ int main(int argc, char **argv){
 						}
 						else if (policial.pontos > melhor_2pontuacao){
 							int z;
+							num_3melhor_policial = num_2melhor_policial;
 							melhor_3pontuacao = melhor_2pontuacao;
 							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
 								pesos_3melhor[z] = pesos_2melhor[z];
 							}
+							num_2melhor_policial = policial.num;
 							melhor_2pontuacao = policial.pontos;
 							vies_2melhor = policial.vies;
 							for (z=0; z<26; z++){
@@ -2047,7 +2055,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
 							printf("Melhor pontuacao: %d", melhor_pontuacao);
 							printf("\n");
@@ -2069,7 +2077,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
 							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
@@ -2091,7 +2099,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
 							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
@@ -2108,6 +2116,7 @@ int main(int argc, char **argv){
 						}
 						else if (policial.pontos > melhor_3pontuacao){
 							int z;
+							num_3melhor_policial = policial.num;
 							melhor_3pontuacao = policial.pontos;
 							vies_3melhor = policial.vies;
 							for (z=0; z<26; z++){
@@ -2120,7 +2129,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
 							printf("Melhor pontuacao: %d", melhor_pontuacao);
 							printf("\n");
@@ -2142,7 +2151,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
 							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
@@ -2164,7 +2173,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Geracao: %d", geracao);
 							printf("\n");
-							printf("Numero do policial: %d", num_policial);
+							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
 							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
