@@ -1,4 +1,4 @@
-// versao 03
+// versao 04
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -189,7 +189,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float vies_mel
 	for (i=0; i<26; i++){
 		// valor aleatório no intervalo [0, 1]
 		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.9){
+		if (mutar >= 0.8){
 			(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
 		}
 		else {
@@ -197,7 +197,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float vies_mel
 		}
 	}
 	mutar = (float)rand() / (float)RAND_MAX;
-	if (mutar >= 0.9){
+	if (mutar >= 0.8){
 		(*policial).vies = (float)rand() / (float)RAND_MAX;
 	}
 	else {
@@ -271,7 +271,7 @@ float calcular_dist_policia_ladaro_x(Personagem policial, Personagem ladrao){
 }
 
 float calcular_dist_policia_ladaro_y(Personagem policial, Personagem ladrao){
-	return abs(policial.y - ladrao.y);
+	return abs(policial.andar - ladrao.andar);
 }
 
 void calcular_pontos(Personagem *policial){
@@ -762,8 +762,9 @@ void animar_policial(Personagem *policial, int tempo){
 	if ((*policial).no_poste == 1){
 		(*policial).imagem = (*policial).imagens[3];
 	}
-	else{
-		//(*policial).imagem = (*policial).imagens[0];
+	// animação dele na escada
+	if ((*policial).dentro_escada == 1){
+		(*policial).imagem = (*policial).imagens[0];
 	}
 }
 
@@ -1806,7 +1807,7 @@ int main(int argc, char **argv){
 						calcular_inputs(&policial, ladrao, mundo);
 						calcular_input_final(&policial);
 						escolher_acao(policial.input_final, &teclas, &policial);
-						if(tempo % (int)FPS == 0)
+						if((tempo % (int)FPS)/2 == 0)
 							calcular_pontos(&policial);
 					}
 				}
