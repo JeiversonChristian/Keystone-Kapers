@@ -1,4 +1,4 @@
-// versao 04
+// versao 05
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -185,7 +185,7 @@ const int TEMPO_LIMITE = 80;
 
 void mutar_policial(Personagem *policial, float pesos_melhor[26], float vies_melhor){
 	int i;
-	int mutar;
+	float mutar;
 	for (i=0; i<26; i++){
 		// valor aleatório no intervalo [0, 1]
 		mutar = (float)rand() / (float)RAND_MAX;
@@ -276,27 +276,27 @@ float calcular_dist_policia_ladaro_y(Personagem policial, Personagem ladrao){
 
 void calcular_pontos(Personagem *policial){
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
-		(*policial).pontos += 3;
+		(*policial).pontos += 5;
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
-		(*policial).pontos -= 1;
+		(*policial).pontos -= 2;
 	}
 
 	if ((*policial).dist_y_ladrao < (*policial).dist_y_ladrao_anterior){
-		(*policial).pontos += 3;
+		(*policial).pontos += 8;
 	}
 	else if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-		(*policial).pontos -= 1;
+		(*policial).pontos -= 7;
 	}
 	
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
 		if ((*policial).dist_y_ladrao < (*policial).dist_y_ladrao_anterior){
-			(*policial).pontos += 6;
+			(*policial).pontos += 10;
 		}	
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
 		if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-			(*policial).pontos -= 3;
+			(*policial).pontos -= 8;
 		}	
 	}
 
@@ -764,6 +764,10 @@ void animar_policial(Personagem *policial, int tempo){
 	}
 	// animação dele na escada
 	if ((*policial).dentro_escada == 1){
+		(*policial).imagem = (*policial).imagens[0];
+	}
+	// animação dele no elevador
+	if ((*policial).dentro_elevador == 1){
 		(*policial).imagem = (*policial).imagens[0];
 	}
 }
@@ -1709,10 +1713,14 @@ int main(int argc, char **argv){
 	int num_policial = 1;
 	int ia_jogando = 1;
 	int geracao = 1;
-	int num_max_policiais = 10;
+	int num_max_policiais = 5;
 	int melhor_pontuacao = -32768;
 	float pesos_melhor[26];
-	float vies_melhor;
+	int k;
+	for (k=0; k<26; k++){
+		pesos_melhor[26] = 0;
+	}
+	float vies_melhor = 0;
 	// ---------------------------------------------------------------------------------------
 
 	//-------------------------- criação das structs -----------------------------------------
@@ -1807,8 +1815,9 @@ int main(int argc, char **argv){
 						calcular_inputs(&policial, ladrao, mundo);
 						calcular_input_final(&policial);
 						escolher_acao(policial.input_final, &teclas, &policial);
-						if((tempo % (int)FPS)/2 == 0)
+						if((tempo % (int)FPS)/2 == 0){
 							calcular_pontos(&policial);
+						}
 					}
 				}
 
