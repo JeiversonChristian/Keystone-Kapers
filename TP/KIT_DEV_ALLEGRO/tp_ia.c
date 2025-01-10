@@ -1,4 +1,4 @@
-// versao 06
+// versao 07
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -1980,6 +1980,7 @@ int main(int argc, char **argv){
 							for (z=0; z<26; z++){
 								printf(" [%f] ", pesos_melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							
@@ -1992,15 +1993,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
-							printf("2o Melhor vies: %f", vies_melhor);
+							printf("2o Melhor vies: %f", vies_2melhor);
 							printf("\n");
 							printf("2o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_2melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 
@@ -2013,15 +2015,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
-							printf("3o Melhor vies: %f", vies_melhor);
+							printf("3o Melhor vies: %f", vies_3melhor);
 							printf("\n");
 							printf("3o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_3melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 						}
@@ -2055,6 +2058,7 @@ int main(int argc, char **argv){
 							for (z=0; z<26; z++){
 								printf(" [%f] ", pesos_melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							
@@ -2067,15 +2071,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
-							printf("2o Melhor vies: %f", vies_melhor);
+							printf("2o Melhor vies: %f", vies_2melhor);
 							printf("\n");
 							printf("2o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_2melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 
@@ -2088,15 +2093,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
-							printf("3o Melhor vies: %f", vies_melhor);
+							printf("3o Melhor vies: %f", vies_3melhor);
 							printf("\n");
 							printf("3o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_3melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 						}
@@ -2125,6 +2131,7 @@ int main(int argc, char **argv){
 							for (z=0; z<26; z++){
 								printf(" [%f] ", pesos_melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							
@@ -2137,15 +2144,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
 							printf("\n");
-							printf("2o Melhor vies: %f", vies_melhor);
+							printf("2o Melhor vies: %f", vies_2melhor);
 							printf("\n");
 							printf("2o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_2melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 
@@ -2158,15 +2166,16 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("Numero do policial: %d", num_policial);
 							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_pontuacao);
+							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
 							printf("\n");
-							printf("3o Melhor vies: %f", vies_melhor);
+							printf("3o Melhor vies: %f", vies_3melhor);
 							printf("\n");
 							printf("3o Melhores pesos:");
 							printf("\n");
 							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+								printf(" [%f] ", pesos_3melhor[z]);
 							}
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 						}
