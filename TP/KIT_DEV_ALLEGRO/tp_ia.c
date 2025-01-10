@@ -2030,8 +2030,8 @@ int main(int argc, char **argv){
 						}
 						else if (policial.pontos > melhor_2pontuacao){
 							int z;
-							melhor_3pontuacao = policial.pontos;
-							vies_3melhor = policial.vies;
+							melhor_3pontuacao = melhor_2pontuacao;
+							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
 								pesos_3melhor[z] = pesos_2melhor[z];
 							}
