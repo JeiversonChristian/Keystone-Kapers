@@ -1,4 +1,4 @@
-// versao 07
+// versao 08
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -446,7 +446,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*policial).y = 5*SCREEN_H/6.0 - (*policial).altura; // no primeiro andar
 	(*policial).vx_inicial = 1.6 * (*ladrao).vx_inicial; // ligeiramente mais rápido que o ladrão
 	(*policial).vx = (*policial).vx_inicial; 
-	(*policial).vy = 0; // a lógica do pulo é outra
+	(*policial).vy = 50; // a lógica do pulo é outra
 	(*policial).direcao_pulo = 0.0; // pulando em nenhuma direção
 	(*policial).orientacao = 1; // virado pra esquerda
 	(*policial).andar = 1; // primeiro andar
@@ -1783,13 +1783,16 @@ int main(int argc, char **argv){
 	// ---------------------------------------------------------------------------------------
 
 	// ------------------------- para IA -----------------------------------------------------
+	int ia_jogando = 1;
+	int num_max_policiais = 6;
 	int num_policial = 1;
 	int num_melhor_policial = 1;
 	int num_2melhor_policial = 1;
 	int num_3melhor_policial = 1;
-	int ia_jogando = 1;
 	int geracao = 1;
-	int num_max_policiais = 6;
+	int geracao_melhor = 1;
+	int geracao_2melhor = 1;
+	int geracao_3melhor = 1;
 	int melhor_pontuacao = -32768;
 	int melhor_2pontuacao = -32768;
 	int melhor_3pontuacao = -32768;
@@ -1950,18 +1953,21 @@ int main(int argc, char **argv){
 						calcular_pontos(&policial, ladrao);
 						if (policial.pontos > melhor_pontuacao){
 							int z;
+							geracao_3melhor = geracao_2melhor;
 							num_3melhor_policial = num_2melhor_policial;
 							melhor_3pontuacao = melhor_2pontuacao;
 							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
 								pesos_3melhor[z] = pesos_2melhor[z];
 							}
+							geracao_2melhor = geracao_melhor;
 							num_2melhor_policial = num_melhor_policial;
 							melhor_2pontuacao = melhor_pontuacao;
 							vies_2melhor = vies_melhor;
 							for (z=0; z<26; z++){
 								pesos_2melhor[z] = pesos_melhor[z];
 							}
+							geracao_melhor = policial.geracao;
 							num_melhor_policial = policial.num;
 							melhor_pontuacao = policial.pontos;
 							vies_melhor = policial.vies;
@@ -1973,7 +1979,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("1");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
@@ -1995,7 +2001,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("2");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_2melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
@@ -2017,7 +2023,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("3");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_3melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
@@ -2036,12 +2042,14 @@ int main(int argc, char **argv){
 						}
 						else if (policial.pontos > melhor_2pontuacao){
 							int z;
+							geracao_3melhor = geracao_2melhor;
 							num_3melhor_policial = num_2melhor_policial;
 							melhor_3pontuacao = melhor_2pontuacao;
 							vies_3melhor = vies_2melhor;
 							for (z=0; z<26; z++){
 								pesos_3melhor[z] = pesos_2melhor[z];
 							}
+							geracao_2melhor = policial.geracao;
 							num_2melhor_policial = policial.num;
 							melhor_2pontuacao = policial.pontos;
 							vies_2melhor = policial.vies;
@@ -2053,7 +2061,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("1");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
@@ -2075,7 +2083,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("2");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_2melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
@@ -2097,7 +2105,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("3");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_3melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
@@ -2116,6 +2124,7 @@ int main(int argc, char **argv){
 						}
 						else if (policial.pontos > melhor_3pontuacao){
 							int z;
+							geracao_3melhor = policial.geracao;
 							num_3melhor_policial = policial.num;
 							melhor_3pontuacao = policial.pontos;
 							vies_3melhor = policial.vies;
@@ -2127,7 +2136,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("1");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_melhor_policial);
 							printf("\n");
@@ -2149,7 +2158,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("2");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_2melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_2melhor_policial);
 							printf("\n");
@@ -2171,7 +2180,7 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("3");
 							printf("\n");
-							printf("Geracao: %d", geracao);
+							printf("Geracao: %d", geracao_3melhor);
 							printf("\n");
 							printf("Numero do policial: %d", num_3melhor_policial);
 							printf("\n");
