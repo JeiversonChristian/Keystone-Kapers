@@ -559,6 +559,52 @@ void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas
 			}
 		}
 	}
+
+	// escada rolante
+	for (j=0; j<=2; j++){
+		if((*policial).dentro_escada==1){
+			break; // pra não ir pra dentro da outra escada
+		}
+		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
+			// está dentro da regição da escada
+			(*policial).dentro_escada = 1;
+			(*policial).escada_num = j;
+
+			for (i=0; i<=12; i++){
+				if(j == 1){
+					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
+				}
+				if(j == 0 || j == 2){
+					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
+						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+							// está em cima do degrau
+							(*policial).degrau_num = i;
+							(*policial).pode_andar = 0;
+							(*policial).pode_pular = 0;
+							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+							(*policial).y = (*policial).y_chao - (*policial).altura;
+							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+							(*policial).x = (int)(*policial).x_global % SCREEN_W;
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+	}
 	
 }
 
@@ -588,8 +634,13 @@ void animar_policial(Personagem *policial, int tempo){
 	if ((*policial).no_poste == 1){
 		(*policial).imagem = (*policial).imagens[3];
 	}
-	else{
-		//(*policial).imagem = (*policial).imagens[0];
+	// animação dele na escada
+	if ((*policial).dentro_escada == 1){
+		(*policial).imagem = (*policial).imagens[0];
+	}
+	// animação dele no elevador
+	if ((*policial).dentro_elevador == 1){
+		(*policial).imagem = (*policial).imagens[0];
 	}
 }
 
@@ -721,52 +772,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).andar = mundo.elevador.andar;
 	}
 
-	// escada rolante
-	for (j=0; j<=2; j++){
-		if((*policial).dentro_escada==1){
-			break; // pra não ir pra dentro da outra escada
-		}
-		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
-			// está dentro da regição da escada
-			(*policial).dentro_escada = 1;
-			(*policial).escada_num = j;
-
-			for (i=0; i<=12; i++){
-				if(j == 1){
-					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				if(j == 0 || j == 2){
-					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				
-			}
-		}
-	}
-	// subir
+	// subir na escada rolante
 	if((*policial).dentro_escada == 1){
 		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
 		(*policial).y = (*policial).y_chao - (*policial).altura;

@@ -191,6 +191,12 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 	float mutar;
 	if ((*policial).num == 1){
 		for (i=0; i<26; i++){
+			(*policial).pesos[i] = pesos_melhor[i];
+			(*policial).vies = vies_melhor;
+		}
+	}
+	else if ((*policial).num == 2){
+		for (i=0; i<26; i++){
 			// valor aleatório no intervalo [0, 1]
 			mutar = (float)rand() / (float)RAND_MAX;
 			if (mutar >= 0.9){
@@ -208,7 +214,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 			(*policial).vies = vies_melhor;
 		}
 	}
-	else if ((*policial).num == 2){
+	else if ((*policial).num == 3){
 		for (i=0; i<26; i++){
 			// valor aleatório no intervalo [0, 1]
 			mutar = (float)rand() / (float)RAND_MAX;
@@ -227,7 +233,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 			(*policial).vies = vies_melhor;
 		}
 	}
-	else if ((*policial).num == 3){
+	else if ((*policial).num == 4){
 		for (i=0; i<26; i++){
 			// valor aleatório no intervalo [0, 1]
 			mutar = (float)rand() / (float)RAND_MAX;
@@ -246,7 +252,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 			(*policial).vies = vies_2melhor;
 		}
 	}
-	else if ((*policial).num == 4){
+	else if ((*policial).num == 5){
 		for (i=0; i<26; i++){
 			// valor aleatório no intervalo [0, 1]
 			mutar = (float)rand() / (float)RAND_MAX;
@@ -265,7 +271,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 			(*policial).vies = vies_2melhor;
 		}
 	}
-	else if ((*policial).num == 5){
+	else if ((*policial).num == 6){
 		for (i=0; i<26; i++){
 			// valor aleatório no intervalo [0, 1]
 			mutar = (float)rand() / (float)RAND_MAX;
@@ -288,7 +294,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2m
 		for (i=0; i<26; i++){
 			(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
 		}
-		(*policial).vies = vies_melhor;
+		(*policial).vies = (float)rand() / (float)RAND_MAX;
 	}
 }
 
@@ -1823,7 +1829,7 @@ int main(int argc, char **argv){
 
 	// ------------------------- para IA -----------------------------------------------------
 	int ia_jogando = 1;
-	int num_max_policiais = 6;
+	int num_max_policiais = 7;
 	int num_policial = 1;
 	int num_melhor_policial = 1;
 	int num_2melhor_policial = 1;
@@ -2014,6 +2020,8 @@ int main(int argc, char **argv){
 								pesos_melhor[z] = policial.pesos[z];
 							}
 							printf("\n");
+							printf("===================================================================");
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							printf("1");
@@ -2077,6 +2085,8 @@ int main(int argc, char **argv){
 							}
 							printf("\n");
 							printf("########################################");
+							printf("\n");
+							printf("===================================================================");
 							printf("\n");
 						}
 						else if (policial.pontos > melhor_2pontuacao){
@@ -2096,6 +2106,8 @@ int main(int argc, char **argv){
 								pesos_2melhor[z] = policial.pesos[z];
 							}
 							printf("\n");
+							printf("===================================================================");
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							printf("1");
@@ -2159,6 +2171,8 @@ int main(int argc, char **argv){
 							}
 							printf("\n");
 							printf("########################################");
+							printf("\n");
+							printf("===================================================================");
 							printf("\n");
 						}
 						else if (policial.pontos > melhor_3pontuacao){
@@ -2171,6 +2185,8 @@ int main(int argc, char **argv){
 								pesos_3melhor[z] = policial.pesos[z];
 							}
 							printf("\n");
+							printf("===================================================================");
+							printf("\n");
 							printf("########################################");
 							printf("\n");
 							printf("1");
@@ -2235,6 +2251,8 @@ int main(int argc, char **argv){
 							printf("\n");
 							printf("########################################");
 							printf("\n");
+							printf("===================================================================");
+							printf("\n");
 						}
 
 						if (policial.num < num_max_policiais){
@@ -2244,6 +2262,9 @@ int main(int argc, char **argv){
 							geracao += 1;
 							policial.geracao = geracao;
 							num_policial = 1;
+							printf("\n");
+							printf("XXXXXXXXXXXXXXXXXXXXX MUDOU DE GERAÇÃO XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+							printf("\n");
 						}
 						inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
 						
