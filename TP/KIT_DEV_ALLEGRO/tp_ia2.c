@@ -1,4 +1,4 @@
-// versao 2.1
+// versao 2.2
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -190,7 +190,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos
 	int i, j, acrescimo;
 	for (i=0; i<5; i++){
 		for (j=0; j<23; j++){
-			if ((*policial).num == 1)
+			if ((*policial).num == NUM_POLICIAIS)
 				(*policial).pesos[i][j] = pesos_melhor[i][j];
 			else{
 				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
@@ -206,7 +206,7 @@ void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos
 	}
 	for (i=0; i<5; i++){
 		for (j=0; j<5; j++){
-			if ((*policial).num == 1)
+			if ((*policial).num == NUM_POLICIAIS)
 				(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor[i][j];
 			else{
 				// "acrescimo" de valor int no intervalo [-300, 300] convertido para float
@@ -298,7 +298,7 @@ void calcular_outputs(Personagem *policial){
 	}
 }
 
-void calcular_x_abs(Personagem *policial, Personagem *ladrao){
+void calcular_x_abs_policial(Personagem *policial){
 	if ((*policial).andar == 1)
 		(*policial).x_abs = 4*SCREEN_W - (*policial).x_global;
 	else if ((*policial).andar == 2)
@@ -307,7 +307,9 @@ void calcular_x_abs(Personagem *policial, Personagem *ladrao){
 		(*policial).x_abs = 2*4*SCREEN_W + (4*SCREEN_W - (*policial).x_global);
 	else if (((*policial).andar == 4))
 		(*policial).x_abs = 3*4*SCREEN_W + (*policial).x_global;
+}
 
+void calcular_x_abs_ladrao(Personagem *ladrao){
 	if ((*ladrao).andar == 1)
 		(*ladrao).x_abs = 4*SCREEN_W - (*ladrao).x_global;
 	else if ((*ladrao).andar == 2)
@@ -323,15 +325,22 @@ float calcular_dist_policia_ladaro_x(Personagem policial, Personagem ladrao){
 }
 
 void calcular_pontos(Personagem *policial, Personagem ladrao){
+	if ((*policial).andar == ladrao.andar){
+		(*policial).pontos += 1;
+		if ((*policial).num_tela == ladrao.num_tela){
+			(*policial).pontos += 1;
+		}
+	}
+
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
 		(*policial).pontos += 5;
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
-		(*policial).pontos -= 2;
+		(*policial).pontos -= 3;
 	}
 
 	if ((*policial).na_lama == 1){
-		(*policial).pontos -= 1;
+		(*policial).pontos -= 4;
 	}
 }
 
@@ -685,7 +694,7 @@ void inicializar_structs(Tecla *teclas, Personagem policiais[NUM_POLICIAIS], ALL
 			calcular_inputs(&policiais[i], *mundo);
 			calcular_outputs_camada_oculta(&policiais[i]);
 			calcular_outputs(&policiais[i]);
-			calcular_x_abs(&policiais[i], ladrao);
+			calcular_x_abs_policial(&policiais[i]);
 			policiais[i].dist_x_inicial = calcular_dist_policia_ladaro_x(policiais[i], *ladrao);
 			policiais[i].dist_x_ladrao_anterior = policiais[i].dist_x_inicial;
 			policiais[i].dist_x_ladrao = policiais[i].dist_x_ladrao_anterior;
@@ -937,6 +946,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		if((*policial).x_global > 0 && (*policial).x_global + (*policial).largura < 4*SCREEN_W){
 			(*policial).x_global += (*policial).vx * (*policial).direcao_pulo;
 			(*policial).x = (int)(*policial).x_global % SCREEN_W;
+			calcular_x_abs_policial(policial);
 		}
 		// colando no chão
 		if ((*policial).y > (*policial).y_chao - (*policial).altura){
@@ -977,14 +987,16 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
 		(*policial).y_chao = mundo.elevador.y_chao_porta;
 		(*policial).andar = mundo.elevador.andar;
+		calcular_x_abs_policial(policial);
 	}
 
-	// subir no elevador
+	// subir na escada
 	if((*policial).dentro_escada == 1){
 		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
 		(*policial).y = (*policial).y_chao - (*policial).altura;
 		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
 		(*policial).x = (int)(*policial).x_global % SCREEN_W;
+		calcular_x_abs_policial(policial);
 		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
 			(*policial).dentro_escada = 0;
 			(*policial).escada_num = -1;
@@ -1699,7 +1711,7 @@ int main(int argc, char **argv){
 	int num_max_repeticoes = 3;
 	int quantidade_repeticoes = 0;
 	int ultima_melhor_pontuacao = melhor_pontuacao;
-	int taxa_mutacao = 8;
+	int taxa_mutacao = 9;
 	float pesos_melhor[5][23];
 	float pesos_camada_oculta_melhor[5][5];
 	int teve_um_vencedor = 0;
@@ -1781,8 +1793,20 @@ int main(int argc, char **argv){
 				if (pause == 0) {
 
 					atualiza_posicao_elevador(&mundo, tempo);
-					atualizar_posicao_ladrao(&ladrao, policiais[0]);
 					atualiza_posicao_escada(&mundo, tempo, policiais[0]);
+					calcular_x_abs_ladrao(&ladrao);
+					for (po=0; po<NUM_POLICIAIS; po++){
+						(policiais[po]).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+					}
+					atualizar_posicao_ladrao(&ladrao, policiais[0]);
+					calcular_x_abs_ladrao(&ladrao);
+					for (po=0; po<NUM_POLICIAIS; po++){
+						(policiais[po]).dist_x_ladrao = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+						calcular_pontos(&policiais[po], ladrao);
+						/*if((tempo % (int)FPS) == 0){
+							calcular_pontos(&policiais[po], ladrao);
+						}*/
+					}
 
 					// anima personagens
 					animar_policial(&policiais[NUM_POLICIAIS-1],  tempo);
@@ -1793,7 +1817,7 @@ int main(int argc, char **argv){
 					
 					
 					for (po=0; po<NUM_POLICIAIS; po++){
-						calcular_x_abs(&policiais[po], &ladrao);
+						calcular_x_abs_policial(&policiais[po]);
 						(policiais[po]).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
 						calcular_inputs(&policiais[po], mundo);
 						calcular_outputs_camada_oculta(&policiais[po]);
@@ -1801,11 +1825,12 @@ int main(int argc, char **argv){
 						escolher_acao(&teclas, &policiais[po]);
 						atualizar_posicao_policial(&policiais[po], &ladrao, teclas, mundo, tempo);
 						verificar_interacoes(&policiais[po], &ladrao, teclas, mundo, &tempo_captura, tempo_simulado, &record, ia_jogando);
-						calcular_x_abs(&policiais[po], &ladrao);
+						calcular_x_abs_policial(&policiais[po]);
 						(policiais[po]).dist_x_ladrao = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
-						if((tempo % (int)FPS) == 0){
+						calcular_pontos(&policiais[po], ladrao);
+						/*if((tempo % (int)FPS) == 0){
 							calcular_pontos(&policiais[po], ladrao);
-						}
+						}*/
 						desenhar_policial(policiais[po], mundo, policiais[NUM_POLICIAIS-1]);
 					}
 					atualizar_mapa(&mundo, policiais, ladrao);
@@ -1846,46 +1871,20 @@ int main(int argc, char **argv){
 				else{
 					if (ladrao.ganhou == 1){
 						int y, z;
-
-						/*printf("----------------------------------------------------------------------");
-						printf("\n");
-						printf("Policial no %d", policial.num);
-						printf("\n");
-						printf("Pontos: %d", policial.pontos);
-						printf("\n");
-						printf("Pesos:");
-						printf("\n");
-						for (y=0; y<5; y++){
-							printf("\n");
-							for (z=0; z<23; z++){
-								printf(" [%.0f] ", policial.pesos[y][z]);
-							}
-							printf("\n");
-						}
-						printf("\n");
-						printf("Pesos camada oculta:");
-						printf("\n");
-						for (y=0; y<5; y++){
-							printf("\n");
-							for (z=0; z<5; z++){
-								printf(" [%.0f] ", policial.pesos_camada_oculta[y][z]);
-							}
-							printf("\n");
-						}
-						printf("----------------------------------------------------------------------");
-						printf("\n");*/		
+	
 						for (po=0; po<NUM_POLICIAIS; po++){
 
 							if (policiais[po].pontos >= melhor_pontuacao){
 
-								/*if (policial.pontos > melhor_pontuacao && geracao > 1){
+								if (policiais[po].pontos > melhor_pontuacao && geracao > 1){
 									if (taxa_mutacao - 1 >= 1)
 										taxa_mutacao -= 1;
-								}*/
+								}
 								
 								geracao_melhor = policiais[po].geracao;
 								num_melhor_policial = policiais[po].num;
 								melhor_pontuacao = policiais[po].pontos;
+
 								for (y=0; y<5; y++){
 									for (z=0; z<23; z++){
 										pesos_melhor[y][z] = policiais[po].pesos[y][z];
@@ -1899,6 +1898,57 @@ int main(int argc, char **argv){
 							}
 
 						}
+
+						printf("################################################ geracao %d ################################################", geracao);
+						printf("\n");
+						printf("\n");
+						printf("Melhor policial: %d", num_melhor_policial);
+						printf("\n");
+						printf("Pontos: %d", melhor_pontuacao);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", pesos_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", pesos_camada_oculta_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+						printf("-----------------------------------------------------------------------------------------------------");
+						printf("\n");
+						printf("Policial numero %d", NUM_POLICIAIS);
+						printf("\n");
+						printf("Pontos: %d", policiais[NUM_POLICIAIS-1].pontos);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", policiais[NUM_POLICIAIS-1].pesos[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", policiais[NUM_POLICIAIS-1].pesos_camada_oculta[y][z]);
+							}
+							printf("\n");
+						}
+						printf("-----------------------------------------------------------------------------------------------------");
+						printf("\n");
 							
 						for (po=0; po<NUM_POLICIAIS; po++){
 							if (policiais[po].pontos == melhor_pontuacao){
@@ -1909,35 +1959,6 @@ int main(int argc, char **argv){
 							}
 						}
 						
-						/*printf("----------------------------------------------------------------------");
-						printf("\n");
-						printf("MELHOR DA GERACAO %d", geracao);
-						printf("\n");
-						printf("Policial no %d", num_melhor_policial);
-						printf("\n");
-						printf("Pontos: %d", melhor_pontuacao);
-						printf("\n");
-						printf("Pesos:");
-						printf("\n");
-						for (y=0; y<5; y++){
-							printf("\n");
-							for (z=0; z<23; z++){
-								printf(" [%.0f] ", pesos_melhor[y][z]);
-							}
-							printf("\n");
-						}
-						printf("\n");
-						printf("Pesos camada oculta:");
-						printf("\n");
-						for (y=0; y<5; y++){
-							printf("\n");
-							for (z=0; z<5; z++){
-								printf(" [%.0f] ", pesos_camada_oculta_melhor[y][z]);
-							}
-							printf("\n");
-						}
-						printf("----------------------------------------------------------------------");
-						printf("\n");*/
 						geracao += 1;
 						if (geracao > num_max_geracoes /*|| quantidade_repeticoes > num_max_repeticoes*/){
 							geracao = 1;
@@ -1946,14 +1967,7 @@ int main(int argc, char **argv){
 							taxa_mutacao = 6;
 						}
 						for (po=0; po<NUM_POLICIAIS; po++)
-							policiais[po].geracao = geracao;
-
-						/*printf("\n");
-						printf("\n");
-						printf("XXXXXXXXXXXXXXXXXX GERACAO %d XXXXXXXXXXXXXXXXXXXXXXXXX", geracao);
-						printf("\n");
-						printf("\n");*/
-					
+							policiais[po].geracao = geracao;				
 
 						inicializar_structs(&teclas, policiais, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
 						
@@ -1990,27 +2004,6 @@ int main(int argc, char **argv){
 							}
 						
 						}
-						/*printf("----------------------------------------------------------------------");
-						printf("\n");
-						printf("POLICIAL VENCEDOR ");
-						printf("\n");
-						printf("Geração no %d", geracao_melhor);
-						printf("\n");
-						printf("Policial no %d", num_melhor_policial);
-						printf("\n");
-						printf("Pontos: %d", melhor_pontuacao);
-						printf("\n");
-						printf("Pesos:");
-						printf("\n");
-						for (y=0; y<5; y++){
-							printf("\n");
-							for (z=0; z<23; z++){
-								printf(" [%.0f] ", pesos_melhor[y][z]);
-							}
-							printf("\n");
-						}
-						printf("----------------------------------------------------------------------");
-						printf("\n");*/
 
 						//desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
 						playing = 0;
