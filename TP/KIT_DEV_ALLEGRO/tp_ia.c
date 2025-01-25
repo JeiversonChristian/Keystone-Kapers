@@ -1,4 +1,4 @@
-// versao 08
+// versao final, só falta organizar
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -6,6 +6,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <windows.h> // Para Sleep()
+#include <unistd.h> // Para usleep()
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_font.h>
@@ -60,27 +62,24 @@ typedef struct Personagem{
 	int no_poste;
 
 	// para ia
-	int apertar_nova_tecla;
-	int soltar_uma_tecla;
-	int tem_teclas_apertar;
-	int tem_teclas_soltar;
-	int quant_teclas;
-	float input_final;
-	// pos x e y do elevador, pos x e 6 de cada uma das 6 lamas, pos x e y do ladrao, pos x e y de cada uma das 3 escadas, pos x e y do poste dos bombeiros, pos x e y de si mesmo --- > 26 valores
-	float inputs[26];
-	float pesos[26];
-	float vies;
+	int num;
+	int geracao;
 	int pontos;
 	float x_abs;
+	float x_abs_anterior;
 	float dist_x_inicial;
 	float dist_x_ladrao_anterior;
 	float dist_x_ladrao;
-	float menor_dist_x_ladrao;
-	float dist_y_ladrao_anterior;
-	float dist_y_ladrao;
-	float menor_dist_y_ladrao;
-	float num;
-	float geracao;
+	// dist_x_ladrao | x_lama1 | y_lama1 | ... | x_lama6 | y_lama6 | x_escada1 | y_escada1 | ... | x_escada3 | y_escada3 | x_porta_elevador | y_porta_elevador | x_poste | y_poste |
+	float inputs[23];
+	float outputs_camada_oculta[5];
+	// | w | s | a | d | space |
+	float outputs[5];
+	// 5 x 23
+	float pesos[5][23];
+	float pesos_camada_oculta[5][5];
+	int eh_o_melhor;
+	int rgb[3];
 }Personagem;
 
 typedef struct Elevador{
@@ -145,7 +144,7 @@ typedef struct Poste{
 }Poste;
 
 typedef struct Mapa{
-	Personagem policial;
+	Personagem policiais[50];
 	Personagem ladrao;
 	Elevador elevador;
 	Escada escadas[3];
@@ -181,165 +180,159 @@ const float FPS = 60;
 const int SCREEN_W = 960;
 const int SCREEN_H = 690;
 const int TEMPO_LIMITE = 80;
+const int NUM_POLICIAIS = 50;
 // ---------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void mutar_policial(Personagem *policial, float pesos_melhor[26], float pesos_2melhor[26], float pesos_3melhor[26], float vies_melhor, float vies_2melhor, float vies_3melhor, int num_max_policiais){
-	int i;
-	float mutar;
-	if ((*policial).num == 1){
-		for (i=0; i<26; i++){
-			(*policial).pesos[i] = pesos_melhor[i];
-			(*policial).vies = vies_melhor;
+void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos_camada_oculta_melhor[5][5], int num_max_policiais, int taxa_mutacao, float pesos_melhor2[5][23], float pesos_camada_oculta_melhor2[5][5], float pesos_melhor3[5][23], float pesos_camada_oculta_melhor3[5][5]){
+	// print teste
+	int i, j, acrescimo;
+	for (i=0; i<5; i++){
+		for (j=0; j<23; j++){
+			if ((*policial).num == NUM_POLICIAIS)
+				(*policial).pesos[i][j] = pesos_melhor[i][j];
+			else if((*policial).num % 2 == 0){
+				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
+				acrescimo = taxa_mutacao*((rand() % 201) - 100);
+				if (pesos_melhor[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos[i][j] = 1000.0;
+				else if (pesos_melhor[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos[i][j] = -1000.0;
+				else
+					(*policial).pesos[i][j] = pesos_melhor[i][j] + (float)acrescimo;
+			}
+			else if((*policial).num % 3 == 0){
+				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
+				acrescimo = (taxa_mutacao+1)*((rand() % 201) - 100);
+				if (pesos_melhor2[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos[i][j] = 1000.0;
+				else if (pesos_melhor2[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos[i][j] = -1000.0;
+				else
+					(*policial).pesos[i][j] = pesos_melhor2[i][j] + (float)acrescimo;
+			}
+			else{
+				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
+				acrescimo = (taxa_mutacao+2)*((rand() % 201) - 100);
+				if (pesos_melhor3[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos[i][j] = 1000.0;
+				else if (pesos_melhor3[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos[i][j] = -1000.0;
+				else
+					(*policial).pesos[i][j] = pesos_melhor3[i][j] + (float)acrescimo;
+			}
 		}
 	}
-	else if ((*policial).num == 2){
-		for (i=0; i<26; i++){
-			// valor aleatório no intervalo [0, 1]
-			mutar = (float)rand() / (float)RAND_MAX;
-			if (mutar >= 0.9){
-				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+	for (i=0; i<5; i++){
+		for (j=0; j<5; j++){
+			if ((*policial).num == NUM_POLICIAIS)
+				(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor[i][j];
+			else if((*policial).num == NUM_POLICIAIS - 1){
+				(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor2[i][j];
 			}
-			else {
-				(*policial).pesos[i] = pesos_melhor[i];
+			else if((*policial).num % 2 == 0){
+				// "acrescimo" de valor int no intervalo [-300, 300] convertido para float
+				acrescimo = taxa_mutacao*((rand() % 201) - 100);
+				if (pesos_camada_oculta_melhor[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos_camada_oculta[i][j] = 1000.0;
+				else if (pesos_camada_oculta_melhor[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos_camada_oculta[i][j] = -1000.0;
+				else
+					(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor[i][j] + (float)acrescimo;
 			}
-		}
-		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.9){
-			(*policial).vies = (float)rand() / (float)RAND_MAX;
-		}
-		else {
-			(*policial).vies = vies_melhor;
-		}
-	}
-	else if ((*policial).num == 3){
-		for (i=0; i<26; i++){
-			// valor aleatório no intervalo [0, 1]
-			mutar = (float)rand() / (float)RAND_MAX;
-			if (mutar >= 0.8){
-				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
-			}
-			else {
-				(*policial).pesos[i] = pesos_melhor[i];
+			else{
+				// "acrescimo" de valor int no intervalo [-300, 300] convertido para float
+				acrescimo = taxa_mutacao*((rand() % 201) - 100);
+				if (pesos_camada_oculta_melhor2[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos_camada_oculta[i][j] = 1000.0;
+				else if (pesos_camada_oculta_melhor2[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos_camada_oculta[i][j] = -1000.0;
+				else
+					(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor2[i][j] + (float)acrescimo;
 			}
 		}
-		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.8){
-			(*policial).vies = (float)rand() / (float)RAND_MAX;
-		}
-		else {
-			(*policial).vies = vies_melhor;
-		}
-	}
-	else if ((*policial).num == 4){
-		for (i=0; i<26; i++){
-			// valor aleatório no intervalo [0, 1]
-			mutar = (float)rand() / (float)RAND_MAX;
-			if (mutar >= 0.7){
-				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
-			}
-			else {
-				(*policial).pesos[i] = pesos_2melhor[i];
-			}
-		}
-		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.7){
-			(*policial).vies = (float)rand() / (float)RAND_MAX;
-		}
-		else {
-			(*policial).vies = vies_2melhor;
-		}
-	}
-	else if ((*policial).num == 5){
-		for (i=0; i<26; i++){
-			// valor aleatório no intervalo [0, 1]
-			mutar = (float)rand() / (float)RAND_MAX;
-			if (mutar >= 0.6){
-				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
-			}
-			else {
-				(*policial).pesos[i] = pesos_2melhor[i];
-			}
-		}
-		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.6){
-			(*policial).vies = (float)rand() / (float)RAND_MAX;
-		}
-		else {
-			(*policial).vies = vies_2melhor;
-		}
-	}
-	else if ((*policial).num == 6){
-		for (i=0; i<26; i++){
-			// valor aleatório no intervalo [0, 1]
-			mutar = (float)rand() / (float)RAND_MAX;
-			if (mutar >= 0.5){
-				(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
-			}
-			else {
-				(*policial).pesos[i] = pesos_3melhor[i];
-			}
-		}
-		mutar = (float)rand() / (float)RAND_MAX;
-		if (mutar >= 0.5){
-			(*policial).vies = (float)rand() / (float)RAND_MAX;
-		}
-		else {
-			(*policial).vies = vies_3melhor;
-		}
-	}
-	else{
-		for (i=0; i<26; i++){
-			(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
-		}
-		(*policial).vies = (float)rand() / (float)RAND_MAX;
 	}
 }
 
 void calculcar_pesos(Personagem *policial){
-	int i;
-	for (i=0; i<26; i++){
-		// valor aleatório no intervalo [0, 1]
-		(*policial).pesos[i] = (float)rand() / (float)RAND_MAX;
+	int i, j;
+	for (i=0; i<5; i++){
+		for (j=0; j<23; j++){
+			// valor int no intervalo [-1000, 1000] convertido para float
+			(*policial).pesos[i][j] = (float)((rand() % 2001) - 1000);
+		}
 	}
 }
 
-void calcular_inputs(Personagem *policial, Personagem ladrao, Mundo mundo){
-	int i;
-	(*policial).inputs[0] = (*policial).x_global;
-	(*policial).inputs[1] = (*policial).y;
-	(*policial).inputs[2] = ladrao.x_global;
-	(*policial).inputs[3] = ladrao.y;
-	for (i=0; i<6; i++)
-		(*policial).inputs[4+i] = mundo.lamas[i].x_global;
-	for (i=0; i<6; i++)
-		(*policial).inputs[9+i] = mundo.lamas[i].y;
-	(*policial).inputs[14] = mundo.elevador.x_global;
-	(*policial).inputs[15] = mundo.elevador.y;
-	(*policial).inputs[16] = mundo.poste.x_global;
-	(*policial).inputs[17] = mundo.poste.y;
-	for (i=0; i<3; i++)
-		(*policial).inputs[17+i] = mundo.elevador.x_global;
-	for (i=0; i<3; i++)
-		(*policial).inputs[19+i] = mundo.elevador.y;
-	for (i=0; i<3; i++)
-		(*policial).inputs[21+i] = mundo.escadas[i].x_global;
-	for (i=0; i<3; i++)
-		(*policial).inputs[23+i] = mundo.escadas[i].y;
-}
-
-void calcular_input_final(Personagem *policial){
-	int i;
-	(*policial).input_final = 0;
-	for (i=0; i<26; i++){
-		(*policial).input_final += (*policial).inputs[i] * (*policial).pesos[i];
+void calculcar_pesos_camada_oculta(Personagem *policial){
+	int i, j;
+	for (i=0; i<5; i++){
+		for (j=0; j<5; j++){
+			// valor int no intervalo [-1000, 1000] convertido para float
+			(*policial).pesos_camada_oculta[i][j] = (float)((rand() % 2001) - 1000);
+		}
 	}
-	(*policial).input_final += (*policial).vies;
 }
 
-void calcular_x_abs(Personagem *policial, Personagem *ladrao){
+void calcular_inputs(Personagem *policial, Mundo mundo){
+	int i;
+	(*policial).inputs[0] = (*policial).dist_x_ladrao;
+	for (i=0; i<6; i++){
+		(*policial).inputs[1+i] = mundo.lamas[i].x_global;
+	}
+	for (i=0; i<6; i++){
+		(*policial).inputs[7+i] = mundo.lamas[i].y;
+	}
+	for (i=0; i<3; i++){
+		(*policial).inputs[13+i] = mundo.escadas[i].x_global;
+	}
+	for (i=0; i<3; i++){
+		(*policial).inputs[16+i] = mundo.escadas[i].y;
+	}
+	(*policial).inputs[19] = mundo.elevador.x_global;
+	(*policial).inputs[20] = mundo.elevador.y_porta;
+	(*policial).inputs[21] = mundo.poste.x_global;
+	(*policial).inputs[22] = mundo.poste.y;
+}
+
+void calcular_outputs_camada_oculta(Personagem *policial){
+	int o, i;
+	for (o=0; o<5; o++){
+		(*policial).outputs_camada_oculta[o] = 0;
+	}
+	for (o=0; o<5; o++){
+		for (i=0; i<23; i++){
+			(*policial).outputs_camada_oculta[o] += (*policial).inputs[i] * (*policial).pesos[o][i];
+		}
+	}
+	for (o=0; o<5; o++){
+		if ((*policial).outputs_camada_oculta[o] < 0)
+			(*policial).outputs_camada_oculta[o] = 0;
+	}
+
+}
+
+void calcular_outputs(Personagem *policial){
+	int o, i;
+	for (o=0; o<5; o++){
+		(*policial).outputs[o] = 0;
+	}
+	for (o=0; o<5; o++){
+		for (i=0; i<5; i++){
+			(*policial).outputs[o] += (*policial).outputs_camada_oculta[i] * (*policial).pesos_camada_oculta[o][i];
+		}
+	}
+	for (o=0; o<5; o++){
+		if ((*policial).outputs[o] > 0)
+			(*policial).outputs[o] = 1;
+		else
+			(*policial).outputs[o] = 0;
+	}
+}
+
+void calcular_x_abs_policial(Personagem *policial){
 	if ((*policial).andar == 1)
 		(*policial).x_abs = 4*SCREEN_W - (*policial).x_global;
 	else if ((*policial).andar == 2)
@@ -348,7 +341,9 @@ void calcular_x_abs(Personagem *policial, Personagem *ladrao){
 		(*policial).x_abs = 2*4*SCREEN_W + (4*SCREEN_W - (*policial).x_global);
 	else if (((*policial).andar == 4))
 		(*policial).x_abs = 3*4*SCREEN_W + (*policial).x_global;
+}
 
+void calcular_x_abs_ladrao(Personagem *ladrao){
 	if ((*ladrao).andar == 1)
 		(*ladrao).x_abs = 4*SCREEN_W - (*ladrao).x_global;
 	else if ((*ladrao).andar == 2)
@@ -363,67 +358,31 @@ float calcular_dist_policia_ladaro_x(Personagem policial, Personagem ladrao){
 	return abs(policial.x_abs - ladrao.x_abs);
 }
 
-float calcular_dist_policia_ladaro_y(Personagem policial, Personagem ladrao){
-	return abs(policial.andar - ladrao.andar);
-}
-
 void calcular_pontos(Personagem *policial, Personagem ladrao){
+	if ((*policial).andar == ladrao.andar){
+		(*policial).pontos += 4;
+		if ((*policial).num_tela == ladrao.num_tela){
+			(*policial).pontos += 4;
+		}
+	}
+
 	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
 		(*policial).pontos += 5;
 	}
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
-		(*policial).pontos -= 2;
-	}
-
-	if ((*policial).dist_y_ladrao < (*policial).dist_y_ladrao_anterior){
-		(*policial).pontos += 8;
-	}
-	else if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
 		(*policial).pontos -= 3;
 	}
 	
-	if ((*policial).dist_x_ladrao < (*policial).dist_x_ladrao_anterior){
-		if ((*policial).dist_y_ladrao < (*policial).dist_y_ladrao_anterior){
-			(*policial).pontos += 10;
-		}	
-	}
-	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
-		if ((*policial).dist_y_ladrao > (*policial).dist_y_ladrao_anterior){
-			(*policial).pontos -= 4;
-		}	
-	}
-
-	if ((*policial).na_lama == 1){
+	if ((*policial).x_abs == (*policial).x_abs_anterior){
 		(*policial).pontos -= 1;
 	}
 
-
-	/*ifif(ladrao.ganhou == 1){
-		if ((*policial).dist_x_ladrao < (*policial).dist_x_inicial){
-			(*policial).pontos += 25;
-		}
-		else {
-			(*policial).pontos -= 20;
-		}
-
-		if((*policial).dist_x_ladrao < (*policial).menor_dist_x_ladrao)
-			(*policial).pontos += 25;
-		else if ((*policial).dist_x_ladrao > (*policial).menor_dist_x_ladrao)
-			(*policial).pontos -= 20;
-
-		// precisa corrigir o andar do ladrão quando ele ganha primeiro
-		((*policial).dist_y_ladrao < (*policial).menor_dist_y_ladrao)
-			(*policial).pontos += 25;
-		else if ((*policial).dist_y_ladrao > (*policial).menor_dist_y_ladrao)
-			(*policial).pontos -= 20;
-	}*/
-
-	if ((*policial).ganhou == 1){
-		(*policial).pontos += 100;
+	if ((*policial).na_lama == 1){
+		(*policial).pontos -= 10;
 	}
 }
 
-void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_policial_vitorioso, ALLEGRO_BITMAP *imagem_ladrao_vitorioso, ALLEGRO_BITMAP *imagem_policial2, ALLEGRO_BITMAP *imagem_policial3, ALLEGRO_BITMAP *imagem_policial4, ALLEGRO_BITMAP *imagem_ladrao2, ALLEGRO_BITMAP *imagem_ladrao3, ALLEGRO_BITMAP *imagem_ladrao4, int num_policial, int ia_jogando){
+void inicializar_structs(Tecla *teclas, Personagem policiais[NUM_POLICIAIS], ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_policial_vitorioso, ALLEGRO_BITMAP *imagem_ladrao_vitorioso, ALLEGRO_BITMAP *imagem_policial2, ALLEGRO_BITMAP *imagem_policial3, ALLEGRO_BITMAP *imagem_policial4, ALLEGRO_BITMAP *imagem_ladrao2, ALLEGRO_BITMAP *imagem_ladrao3, ALLEGRO_BITMAP *imagem_ladrao4, int num_policial, int ia_jogando){
 	int i;
 	int j;
 
@@ -475,38 +434,40 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).no_poste = 0;
 
 	// Policial
-	(*policial).imagem = imagem_policial;
-	(*policial).imagem_vitoria = imagem_policial_vitorioso;
-	(*policial).imagens[0] = imagem_policial;
-	(*policial).imagens[1] = imagem_policial2;
-	(*policial).imagens[2] = imagem_policial3;
-	(*policial).imagens[3] = imagem_policial4;
-	(*policial).sentido_anima = 1; // indo da esquerda pra direita nas imagens
-	(*policial).imagem_atual = 0;
-	(*policial).largura = al_get_bitmap_width(imagem_policial);
-	(*policial).altura = al_get_bitmap_height(imagem_policial);
-	(*policial).x = SCREEN_W/2 - (*policial).largura/2; // no meio da sala (tela)
-	(*policial).x_global = 3*SCREEN_W + (*policial).x; // quase no final já
-	(*policial).y = 5*SCREEN_H/6.0 - (*policial).altura; // no primeiro andar
-	(*policial).vx_inicial = 1.6 * (*ladrao).vx_inicial; // ligeiramente mais rápido que o ladrão
-	(*policial).vx = (*policial).vx_inicial; 
-	(*policial).vy = 50; // a lógica do pulo é outra
-	(*policial).direcao_pulo = 0.0; // pulando em nenhuma direção
-	(*policial).orientacao = 1; // virado pra esquerda
-	(*policial).andar = 1; // primeiro andar
-	(*policial).pode_pular = 1; // sim
-	(*policial).pulando = 0; // não
-	(*policial).pode_andar = 1; // sim
-	(*policial).andando = 0; // não
-	(*policial).y_chao = (*policial).y + (*policial).altura; // y do chão abaixo do policial
-	(*policial).num_tela = 1; // tela que o jogador vê
-	(*policial).dentro_elevador = 0; // começa fora
-	(*policial).dentro_escada = 0; // começa fora
-	(*policial).escada_num = -1; // nenhum
-	(*policial).degrau_num = -1; // nenhum
-	(*policial).na_lama = 0;
-	(*policial).ganhou = 0;
-	(*policial).no_poste = 0;
+	for (i=0; i<NUM_POLICIAIS; i++){
+		policiais[i].imagem = imagem_policial;
+		policiais[i].imagem_vitoria = imagem_policial_vitorioso;
+		policiais[i].imagens[0] = imagem_policial;
+		policiais[i].imagens[1] = imagem_policial2;
+		policiais[i].imagens[2] = imagem_policial3;
+		policiais[i].imagens[3] = imagem_policial4;
+		policiais[i].sentido_anima = 1; // indo da esquerda pra direita nas imagens
+		policiais[i].imagem_atual = 0;
+		policiais[i].largura = al_get_bitmap_width(imagem_policial);
+		policiais[i].altura = al_get_bitmap_height(imagem_policial);
+		policiais[i].x = SCREEN_W/2 - policiais[i].largura/2; // no meio da sala (tela)
+		policiais[i].x_global = 3*SCREEN_W + policiais[i].x; // quase no final já
+		policiais[i].y = 5*SCREEN_H/6.0 - policiais[i].altura; // no primeiro andar
+		policiais[i].vx_inicial = 1.6 * (*ladrao).vx_inicial; // ligeiramente mais rápido que o ladrão
+		policiais[i].vx = policiais[i].vx_inicial; 
+		policiais[i].vy = 50; // a lógica do pulo é outra
+		policiais[i].direcao_pulo = 0.0; // pulando em nenhuma direção
+		policiais[i].orientacao = 1; // virado pra esquerda
+		policiais[i].andar = 1; // primeiro andar
+		policiais[i].pode_pular = 1; // sim
+		policiais[i].pulando = 0; // não
+		policiais[i].pode_andar = 1; // sim
+		policiais[i].andando = 0; // não
+		policiais[i].y_chao = policiais[i].y + policiais[i].altura; // y do chão abaixo do policial
+		policiais[i].num_tela = 1; // tela que o jogador vê
+		policiais[i].dentro_elevador = 0; // começa fora
+		policiais[i].dentro_escada = 0; // começa fora
+		policiais[i].escada_num = -1; // nenhum
+		policiais[i].degrau_num = -1; // nenhum
+		policiais[i].na_lama = 0;
+		policiais[i].ganhou = 0;
+		policiais[i].no_poste = 0;
+	}
 
 	// mundo
 	(*mundo).imagem_cidade = imagem_cidade;
@@ -514,8 +475,8 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).dt = 5.0/FPS;
 	
 	// -> elevador
-	(*mundo).elevador.largura = (1.5)*(*policial).largura;
-	(*mundo).elevador.altura = (*policial).altura + (*policial).altura/4 + (*policial).altura/8;
+	(*mundo).elevador.largura = (1.5)*policiais[0].largura;
+	(*mundo).elevador.altura = policiais[0].altura + policiais[0].altura/4 + policiais[0].altura/8;
 	(*mundo).elevador.x = SCREEN_W/2 - (*mundo).elevador.largura/5;
 	(*mundo).elevador.x_global = 0*SCREEN_W + (*mundo).elevador.x; // última sala (tela)
 	(*mundo).elevador.y = 5*SCREEN_H/6.0 - (*mundo).elevador.altura; // no primeiro andar
@@ -528,57 +489,57 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).elevador.subir_descer = 1; // -1 subindo; 1 descendo
 	
 	// -> lama	
-	(*mundo).lamas[0].largura = 2*(*policial).largura; 
-	(*mundo).lamas[0].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[0].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[0].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[0].x = 0; 
 	(*mundo).lamas[0].x_global = 3*SCREEN_W; // 1ª tela
-	(*mundo).lamas[0].y = (*policial).y_chao; // 1º andar
-	(*mundo).lamas[0].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura; 
+	(*mundo).lamas[0].y = policiais[0].y_chao; // 1º andar
+	(*mundo).lamas[0].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura; 
 	(*mundo).lamas[0].num_sala = 1;
 	(*mundo).lamas[0].andar = 1;
 
-	(*mundo).lamas[1].largura = 2*(*policial).largura; 
-	(*mundo).lamas[1].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[1].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[1].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[1].x_global = 2*SCREEN_W + SCREEN_W/2 - ((*mundo).lamas[1].largura)/2; //2ª tela
 	(*mundo).lamas[1].x = (int)((*mundo).lamas[1]).x_global % SCREEN_W;
-	(*mundo).lamas[1].y = (*policial).y_chao; // 1º andar
-	(*mundo).lamas[1].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura;
+	(*mundo).lamas[1].y = policiais[0].y_chao; // 1º andar
+	(*mundo).lamas[1].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura;
 	(*mundo).lamas[1].num_sala = 2;
 	(*mundo).lamas[1].andar = 1;
 
-	(*mundo).lamas[2].largura = 2*(*policial).largura; 
-	(*mundo).lamas[2].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[2].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[2].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[2].x_global = 3*SCREEN_W + SCREEN_W/5; // 1ª tela
 	(*mundo).lamas[2].x = (int)((*mundo).lamas[2]).x_global % SCREEN_W;
 	(*mundo).lamas[2].y = (*mundo).lamas[1].y - SCREEN_H/6; // 2º andar
-	(*mundo).lamas[2].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
+	(*mundo).lamas[2].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
 	(*mundo).lamas[2].num_sala = 1;
 	(*mundo).lamas[2].andar = 2;
 
-	(*mundo).lamas[3].largura = 2*(*policial).largura; 
-	(*mundo).lamas[3].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[3].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[3].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[3].x_global = 0*SCREEN_W + SCREEN_W/4; // 4ª tela
 	(*mundo).lamas[3].x = (int)((*mundo).lamas[3]).x_global % SCREEN_W;
 	(*mundo).lamas[3].y = (*mundo).lamas[1].y - SCREEN_H/6; // 2º andar
-	(*mundo).lamas[3].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
+	(*mundo).lamas[3].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura - SCREEN_H/6;
 	(*mundo).lamas[3].num_sala = 4;
 	(*mundo).lamas[3].andar = 2;
 
-	(*mundo).lamas[4].largura = 2*(*policial).largura; 
-	(*mundo).lamas[4].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[4].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[4].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[4].x_global = 1*SCREEN_W; // 3ª tela
 	(*mundo).lamas[4].x = (int)((*mundo).lamas[4]).x_global % SCREEN_W;
 	(*mundo).lamas[4].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
-	(*mundo).lamas[4].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
+	(*mundo).lamas[4].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
 	(*mundo).lamas[4].num_sala = 3;
 	(*mundo).lamas[4].andar = 3;
 
-	(*mundo).lamas[5].largura = 2*(*policial).largura; 
-	(*mundo).lamas[5].altura = (*policial).altura/16; // fininha
+	(*mundo).lamas[5].largura = 2*policiais[0].largura; 
+	(*mundo).lamas[5].altura = policiais[0].altura/16; // fininha
 	(*mundo).lamas[5].x_global = 2*SCREEN_W + (*mundo).lamas[5].largura; // 2ª tela
 	(*mundo).lamas[5].x = (int)((*mundo).lamas[5]).x_global % SCREEN_W;
 	(*mundo).lamas[5].y = (*mundo).lamas[1].y - 2*SCREEN_H/6; // 3º andar
-	(*mundo).lamas[5].y_chao = (*policial).y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
+	(*mundo).lamas[5].y_chao = policiais[0].y_chao - (*mundo).lamas[0].altura - 2*SCREEN_H/6;
 	(*mundo).lamas[5].num_sala = 2;
 	(*mundo).lamas[5].andar = 3;
 
@@ -588,7 +549,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
 
-	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
+	(*mundo).escadas[1].degraus[0].largura = policiais[0].largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
 	(*mundo).escadas[1].degraus[0].x_global = 4*SCREEN_W - SCREEN_W/2 - (*mundo).escadas[1].degraus[0].largura;
 	(*mundo).escadas[1].degraus[0].x = (int)(*mundo).escadas[1].degraus[0].x_global % SCREEN_W;
@@ -603,7 +564,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].pe.num = 0;
 
 	for (i=1; i<12; i++){
-		(*mundo).escadas[1].degraus[i].largura = (*policial).largura/2;
+		(*mundo).escadas[1].degraus[i].largura = policiais[0].largura/2;
 		(*mundo).escadas[1].degraus[i].altura = 0.8*(SCREEN_H/6)/8;
 		(*mundo).escadas[1].degraus[i].x_global = 4*SCREEN_W - SCREEN_W/2 + (i-1)*(*mundo).escadas[1].degraus[i].largura;
 		(*mundo).escadas[1].degraus[i].x = (int)(*mundo).escadas[1].degraus[i].x_global % SCREEN_W;
@@ -612,7 +573,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 		(*mundo).escadas[1].degraus[i].num = i;
 	}
 
-	(*mundo).escadas[1].degraus[12].largura = (*policial).largura/2;
+	(*mundo).escadas[1].degraus[12].largura = policiais[0].largura/2;
 	(*mundo).escadas[1].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
 	(*mundo).escadas[1].degraus[12].x_global = (*mundo).escadas[1].degraus[11].x_global + (*mundo).escadas[1].degraus[12].largura;
 	(*mundo).escadas[1].degraus[12].x = (int)(*mundo).escadas[1].degraus[12].x_global % SCREEN_W;
@@ -644,7 +605,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	for (j=0; j<=2; j+=2){
 		(*mundo).escadas[j].num_sala = 4;
 		(*mundo).escadas[j].andar = 1+j;
-		(*mundo).escadas[j].degraus[12].largura = (*policial).largura/2;
+		(*mundo).escadas[j].degraus[12].largura = policiais[0].largura/2;
 		(*mundo).escadas[j].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
 		(*mundo).escadas[j].degraus[12].x_global = 0;
 		(*mundo).escadas[j].degraus[12].x = (int)(*mundo).escadas[j].degraus[12].x_global % SCREEN_W;
@@ -658,7 +619,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 		(*mundo).escadas[j].teto.y_chao = (*mundo).escadas[j].degraus[12].y_chao;
 		(*mundo).escadas[j].teto.num = 12;
 
-		(*mundo).escadas[j].degraus[0].largura = (*policial).largura/2;
+		(*mundo).escadas[j].degraus[0].largura = policiais[0].largura/2;
 		(*mundo).escadas[j].degraus[0].altura = 0.8*(SCREEN_H/6)/8;
 		(*mundo).escadas[j].degraus[0].x_global = (*mundo).escadas[j].degraus[12].x_global + 12*(*mundo).escadas[j].degraus[12].largura;
 		(*mundo).escadas[j].degraus[0].x = (int)(*mundo).escadas[j].degraus[0].x_global % SCREEN_W;
@@ -673,7 +634,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 		(*mundo).escadas[j].pe.num = 0;
 
 		for (i=1; i<12; i++){
-			(*mundo).escadas[j].degraus[i].largura = (*policial).largura/2;
+			(*mundo).escadas[j].degraus[i].largura = policiais[0].largura/2;
 			(*mundo).escadas[j].degraus[i].altura = 0.8*(SCREEN_H/6)/8;
 			(*mundo).escadas[j].degraus[i].x_global = (*mundo).escadas[j].degraus[i-1].x_global - (*mundo).escadas[j].degraus[i-1].largura;
 			(*mundo).escadas[j].degraus[i].x = (int)(*mundo).escadas[j].degraus[i].x_global % SCREEN_W;
@@ -723,10 +684,12 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).mapa.proporcaox = (*mundo).mapa.largura / (4*SCREEN_W);
 	(*mundo).mapa.proporcaoy = (*mundo).mapa.altura / (SCREEN_H);
 	// -- > mapa --> policial
-	(*mundo).mapa.policial.x = (*mundo).mapa.x1 + (*policial).x_global * (*mundo).mapa.proporcaox;
-	(*mundo).mapa.policial.y = (*mundo).mapa.y1 + (*policial).y * (*mundo).mapa.proporcaoy;
-	(*mundo).mapa.policial.largura = (*policial).largura * (*mundo).mapa.proporcaox;
-	(*mundo).mapa.policial.altura = (*policial).altura * (*mundo).mapa.proporcaoy;
+	for (i=0; i<NUM_POLICIAIS; i++){
+		(*mundo).mapa.policiais[i].x = (*mundo).mapa.x1 + policiais[0].x_global * (*mundo).mapa.proporcaox;
+		(*mundo).mapa.policiais[i].y = (*mundo).mapa.y1 + policiais[0].y * (*mundo).mapa.proporcaoy;
+		(*mundo).mapa.policiais[i].largura = policiais[0].largura * (*mundo).mapa.proporcaox;
+		(*mundo).mapa.policiais[i].altura = policiais[0].altura * (*mundo).mapa.proporcaoy;
+	}
 	// -- > mapa --> ladrao
 	(*mundo).mapa.ladrao.x = (*mundo).mapa.x1 + (*ladrao).x_global * (*mundo).mapa.proporcaox;
 	(*mundo).mapa.ladrao.y = (*mundo).mapa.y1 + (*ladrao).y * (*mundo).mapa.proporcaoy;
@@ -761,28 +724,26 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	// ------------------------------------------------------------------------------------------------
 	// IA
 	if (ia_jogando == 1){
-		// valor aleatório no intervalo [0, 1]
-		(*policial).num = num_policial;
-		(*policial).geracao = 1;
-		(*policial).vies = (float)rand() / (float)RAND_MAX;
-		calculcar_pesos(policial);
-		calcular_inputs(policial, *ladrao, *mundo);
-		calcular_input_final(policial);
-		(*policial).apertar_nova_tecla = 0;
-		(*policial).soltar_uma_tecla = 0;
-		(*policial).tem_teclas_apertar = 1;
-		(*policial).tem_teclas_soltar = 0;
-		(*policial).quant_teclas = 5;
-		(*policial).pontos = 0;
-		calcular_x_abs(policial, ladrao);
-		(*policial).dist_x_inicial = calcular_dist_policia_ladaro_x(*policial, *ladrao);
-		(*policial).dist_x_ladrao_anterior = (*policial).dist_x_inicial;
-		(*policial).dist_x_ladrao = (*policial).dist_x_ladrao_anterior;
-		(*policial).menor_dist_x_ladrao = (*policial).dist_x_ladrao_anterior;
-		(*policial).dist_y_ladrao_anterior = calcular_dist_policia_ladaro_y(*policial, *ladrao);
-		(*policial).dist_y_ladrao = (*policial).dist_y_ladrao_anterior;
-		(*policial).menor_dist_y_ladrao = (*policial).dist_y_ladrao_anterior;
-		calcular_pontos(policial, *ladrao);
+		for (i=0; i<NUM_POLICIAIS; i++){
+			policiais[i].num = i+1;
+			policiais[i].geracao = 1;
+			calculcar_pesos(&policiais[i]);
+			calculcar_pesos_camada_oculta(&policiais[i]);
+			calcular_inputs(&policiais[i], *mundo);
+			calcular_outputs_camada_oculta(&policiais[i]);
+			calcular_outputs(&policiais[i]);
+			calcular_x_abs_policial(&policiais[i]);
+			policiais[i].x_abs_anterior = policiais[i].x_abs;
+			policiais[i].dist_x_inicial = calcular_dist_policia_ladaro_x(policiais[i], *ladrao);
+			policiais[i].dist_x_ladrao_anterior = policiais[i].dist_x_inicial;
+			policiais[i].dist_x_ladrao = policiais[i].dist_x_ladrao_anterior;
+			policiais[i].pontos = 0;
+			calcular_pontos(&policiais[i], *ladrao);
+			policiais[i].eh_o_melhor = 0;
+			policiais[i].rgb[0] = (rand() % 256);
+			policiais[i].rgb[1] = (rand() % 256);
+			policiais[i].rgb[2] = (rand() % 256);
+		}
 	}
 	// ------------------------------------------------------------------------------------------------	
 }
@@ -848,6 +809,54 @@ void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas
 				(*policial).no_poste = 1;
 				(*policial).pode_andar = 0;
 				(*policial).pode_pular = 0;
+			}
+		}
+	}
+
+	// escada rolante
+	for (j=0; j<=2; j++){
+		if((*policial).dentro_escada==1){
+			break; // pra não ir pra dentro da outra escada
+		}
+		if((*policial).andar == mundo.escadas[j].andar && (*policial).num_tela == mundo.escadas[j].num_sala){
+			if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura){
+				// está dentro da regição da escada
+				(*policial).dentro_escada = 1;
+				(*policial).escada_num = j;
+
+				for (i=0; i<=12; i++){
+					if(j == 1){
+						if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
+							if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+								// está em cima do degrau
+								(*policial).degrau_num = i;
+								(*policial).pode_andar = 0;
+								(*policial).pode_pular = 0;
+								(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+								(*policial).y = (*policial).y_chao - (*policial).altura;
+								(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+								(*policial).x = (int)(*policial).x_global % SCREEN_W;
+								break;
+							}
+						}
+					}
+					if(j == 0 || j == 2){
+						if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
+							if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
+								// está em cima do degrau
+								(*policial).degrau_num = i;
+								(*policial).pode_andar = 0;
+								(*policial).pode_pular = 0;
+								(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
+								(*policial).y = (*policial).y_chao - (*policial).altura;
+								(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
+								(*policial).x = (int)(*policial).x_global % SCREEN_W;
+								break;
+							}
+						}
+					}
+					
+				}
 			}
 		}
 	}
@@ -974,8 +983,14 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).y -= (*policial).vy * mundo.dt; 
 		// só pode pular para o lado se não passar das paredes
 		if((*policial).x_global > 0 && (*policial).x_global + (*policial).largura < 4*SCREEN_W){
+			calcular_x_abs_policial(policial);
+			(*policial).x_abs_anterior = (*policial).x_abs;
+			(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 			(*policial).x_global += (*policial).vx * (*policial).direcao_pulo;
 			(*policial).x = (int)(*policial).x_global % SCREEN_W;
+			calcular_x_abs_policial(policial);
+			(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+			calcular_pontos(policial, *ladrao);
 		}
 		// colando no chão
 		if ((*policial).y > (*policial).y_chao - (*policial).altura){
@@ -1013,62 +1028,29 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 	}
 	// sobe ou desce com o elevador.
 	if ((*policial).dentro_elevador == 1){
+		calcular_x_abs_policial(policial);
+		(*policial).x_abs_anterior = (*policial).x_abs;
+		(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
 		(*policial).y_chao = mundo.elevador.y_chao_porta;
 		(*policial).andar = mundo.elevador.andar;
+		calcular_x_abs_policial(policial);
+		(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		calcular_pontos(policial, *ladrao);
 	}
 
-	// escada rolante
-	for (j=0; j<=2; j++){
-		if((*policial).dentro_escada==1){
-			break; // pra não ir pra dentro da outra escada
-		}
-		if ((*policial).x_global >= mundo.escadas[j].x_global && (*policial).x_global <= mundo.escadas[j].x_global + mundo.escadas[j].largura && (*policial).andar == mundo.escadas[j].andar){
-			// está dentro da regição da escada
-			(*policial).dentro_escada = 1;
-			(*policial).escada_num = j;
-
-			for (i=0; i<=12; i++){
-				if(j == 1){
-					if((*policial).x_global >= mundo.escadas[j].degraus[i].x_global){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				if(j == 0 || j == 2){
-					if((*policial).x_global <= mundo.escadas[j].degraus[i].x_global + mundo.escadas[j].degraus[i].largura){
-						if((*policial).y_chao >= mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura && (*policial).degrau_num == -1){
-							// está em cima do degrau
-							(*policial).degrau_num = i;
-							(*policial).pode_andar = 0;
-							(*policial).pode_pular = 0;
-							(*policial).y_chao = mundo.escadas[j].degraus[i].y_chao - mundo.escadas[j].degraus[i].altura;
-							(*policial).y = (*policial).y_chao - (*policial).altura;
-							(*policial).x_global = mundo.escadas[j].degraus[i].x_global;
-							(*policial).x = (int)(*policial).x_global % SCREEN_W;
-							break;
-						}
-					}
-				}
-				
-			}
-		}
-	}
-	// subir
+	// subir na escada
 	if((*policial).dentro_escada == 1){
 		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
 		(*policial).y = (*policial).y_chao - (*policial).altura;
+		calcular_x_abs_policial(policial);
+		(*policial).x_abs_anterior = (*policial).x_abs;
+		(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
 		(*policial).x = (int)(*policial).x_global % SCREEN_W;
+		calcular_x_abs_policial(policial);
+		(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		calcular_pontos(policial, *ladrao);
 		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
 			(*policial).dentro_escada = 0;
 			(*policial).escada_num = -1;
@@ -1098,7 +1080,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	// foge ladrão
 	// se o policial tiver na mesma tela e andar do ladrão, ele foge pro outro lado com 25% a mais de velocidade
-	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
+	/*if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
 		(*ladrao).orientacao = 0;
 		(*ladrao).vx = 1.25*(*ladrao).vx_inicial;
 	}
@@ -1108,7 +1090,7 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	}
 	else {
 		(*ladrao).vx = (*ladrao).vx_inicial;
-	}
+	}*/
 
 	// andando
 	int direcao_andar;
@@ -1219,7 +1201,7 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 		int j;
 		int num_teto;
 		int num_pe;
-		if (policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala && policial.dentro_elevador == 0){
+		if (/*policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala && policial.dentro_elevador == 0*/1){
 
 			// escada 1 -> 1ª tela, 2º andar
 			// --------------------------------------------------------------------------------------------
@@ -1268,7 +1250,7 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 		// escada 2 -> 4ª tela, 3º andar
 		// --------------------------------------------------------------------------------------------
 		for (j=0; j<=2; j+=2){
-			if (policial.andar == (*mundo).escadas[j].andar && policial.num_tela == (*mundo).escadas[j].num_sala && policial.dentro_elevador == 0){
+			if (/*policial.andar == (*mundo).escadas[j].andar && policial.num_tela == (*mundo).escadas[j].num_sala && policial.dentro_elevador == 0*/1){
 				num_teto = (*mundo).escadas[j].teto.num;
 				num_pe = (*mundo).escadas[j].pe.num;
 
@@ -1313,10 +1295,13 @@ void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 	}
 }
 
-void atualizar_mapa(Mundo *mundo, Personagem policial, Personagem ladrao){
+void atualizar_mapa(Mundo *mundo, Personagem policiais[], Personagem ladrao){
 	// -- > mapa --> policial
-	(*mundo).mapa.policial.x = (*mundo).mapa.x1 + (policial).x_global * (*mundo).mapa.proporcaox;
-	(*mundo).mapa.policial.y = (*mundo).mapa.y1 -4 + (policial).y * (*mundo).mapa.proporcaoy;
+	int po;
+	for (po=0;po<NUM_POLICIAIS;po++){
+		(*mundo).mapa.policiais[po].x = (*mundo).mapa.x1 + (policiais[po]).x_global * (*mundo).mapa.proporcaox;
+		(*mundo).mapa.policiais[po].y = (*mundo).mapa.y1 -4 + (policiais[po]).y * (*mundo).mapa.proporcaoy;
+	}
 	// -- > mapa --> ladrao
 	(*mundo).mapa.ladrao.x = (*mundo).mapa.x1 + (ladrao).x_global * (*mundo).mapa.proporcaox;
 	(*mundo).mapa.ladrao.y = (*mundo).mapa.y1 -4 + (ladrao).y * (*mundo).mapa.proporcaoy;
@@ -1328,6 +1313,7 @@ void atualizar_mapa(Mundo *mundo, Personagem policial, Personagem ladrao){
 void desenhar_cenario(Mundo mundo, Personagem policial) {
 	int i;
 	int j;
+	int po;
 	// Desenha um retângulo preenchido (x1, y1, x2, y2, cor)
     // x1, y1 -> canto superior esquerdo
     // x2, y2 -> canto inferior direito
@@ -1347,40 +1333,44 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// escada
 	// escada 1 -> 1ª tela, 2º andar
 	// --------------------------------------------------------------------------------------------
-	if(mundo.escadas[1].num_sala == policial.num_tela){
-		for (i=0; i<13; i++){
-			al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));		
+	if (policial.num == NUM_POLICIAIS){
+		if(mundo.escadas[1].num_sala == policial.num_tela){
+			for (i=0; i<13; i++){
+				al_draw_filled_rectangle(mundo.escadas[1].degraus[i].x, mundo.escadas[1].degraus[i].y, mundo.escadas[1].degraus[i].x + mundo.escadas[1].degraus[i].largura, mundo.escadas[1].degraus[i].y_chao, al_map_rgb(255,255,255));		
+			}
+			// corrimao da escada 1
+			float x1 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y2 = mundo.escadas[1].pe.y_chao; // vértice no ângulo reto
+			float x2 =  mundo.escadas[1].x+5, y1 = mundo.escadas[1].pe.y_chao; // vértice no final da base
+			float x3 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y3 = mundo.escadas[1].teto.y; // vértice da altura
+			al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
 		}
-		// corrimao da escada 1
-		float x1 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y2 = mundo.escadas[1].pe.y_chao; // vértice no ângulo reto
-    	float x2 =  mundo.escadas[1].x+5, y1 = mundo.escadas[1].pe.y_chao; // vértice no final da base
-    	float x3 = mundo.escadas[1].x + mundo.escadas[1].largura + mundo.escadas[1].degraus[12].largura, y3 = mundo.escadas[1].teto.y; // vértice da altura
-		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
 	}
 	// --------------------------------------------------------------------------------------------
 	// escada 0 -> 4ª tela, 1º andar
 	// escada 2 -> 4ª tela, 3º andar
 	// --------------------------------------------------------------------------------------------
-	for (j=0; j<=2; j+=2){
-		if(mundo.escadas[j].num_sala == policial.num_tela){
-			for (i=0; i<13; i++){
-				al_draw_filled_rectangle(mundo.escadas[j].degraus[i].x, mundo.escadas[j].degraus[i].y, mundo.escadas[j].degraus[i].x + mundo.escadas[j].degraus[i].largura, mundo.escadas[j].degraus[i].y_chao, al_map_rgb(255,255,255));
+	if (policial.num == NUM_POLICIAIS){
+		for (j=0; j<=2; j+=2){
+			if(mundo.escadas[j].num_sala == policial.num_tela){
+				for (i=0; i<13; i++){
+					al_draw_filled_rectangle(mundo.escadas[j].degraus[i].x, mundo.escadas[j].degraus[i].y, mundo.escadas[j].degraus[i].x + mundo.escadas[j].degraus[i].largura, mundo.escadas[j].degraus[i].y_chao, al_map_rgb(255,255,255));
+				}
 			}
 		}
-	}
-	if(mundo.escadas[0].num_sala == policial.num_tela){
-		// corrimao da escada 0
-		float x1 = 1.1*mundo.escadas[0].degraus[0].largura, y1 = mundo.escadas[0].pe.y_chao; // vértice no ângulo reto
-    	float x2 =  mundo.escadas[0].largura + 2.5*mundo.escadas[0].degraus[0].largura, y2 = mundo.escadas[0].pe.y_chao; // vértice no final da base
-    	float x3 = 1.1*mundo.escadas[0].degraus[0].largura, y3 = mundo.escadas[0].teto.y; // vértice da altura
-		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
-	}
-	if(mundo.escadas[2].num_sala == policial.num_tela){
-		// corrimao da escada 2
-    	float x1 = 1.1*mundo.escadas[2].degraus[0].largura, y1 = mundo.escadas[2].pe.y_chao;
-    	float x2 =  mundo.escadas[2].largura + 2.5*mundo.escadas[2].degraus[0].largura, y2 = mundo.escadas[2].pe.y_chao;
-    	float x3 = 1.1*mundo.escadas[2].degraus[0].largura, y3 = mundo.escadas[2].teto.y;
-		al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		if(mundo.escadas[0].num_sala == policial.num_tela){
+			// corrimao da escada 0
+			float x1 = 1.1*mundo.escadas[0].degraus[0].largura, y1 = mundo.escadas[0].pe.y_chao; // vértice no ângulo reto
+			float x2 =  mundo.escadas[0].largura + 2.5*mundo.escadas[0].degraus[0].largura, y2 = mundo.escadas[0].pe.y_chao; // vértice no final da base
+			float x3 = 1.1*mundo.escadas[0].degraus[0].largura, y3 = mundo.escadas[0].teto.y; // vértice da altura
+			al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		}
+		if(mundo.escadas[2].num_sala == policial.num_tela){
+			// corrimao da escada 2
+			float x1 = 1.1*mundo.escadas[2].degraus[0].largura, y1 = mundo.escadas[2].pe.y_chao;
+			float x2 =  mundo.escadas[2].largura + 2.5*mundo.escadas[2].degraus[0].largura, y2 = mundo.escadas[2].pe.y_chao;
+			float x3 = 1.1*mundo.escadas[2].degraus[0].largura, y3 = mundo.escadas[2].teto.y;
+			al_draw_filled_triangle(x1, y1, x2, y2, x3, y3, al_map_rgb(0, 60, 0));
+		}
 	}
 	// --------------------------------------------------------------------------------------------
 
@@ -1398,51 +1388,52 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	al_draw_filled_rectangle(0, 5*SCREEN_H/6.0 + largura, SCREEN_W, 5*SCREEN_H/6.0 + 2*largura, al_map_rgb(160,160,52));
 
 	// retangulo azul
-	// tela 1
-	if (policial.num_tela == 1) {
-		float dist_parede = SCREEN_W/4.0;
-		float largura = SCREEN_W/6.0;
-		float dist_teto = (5*SCREEN_H/6.0 - 4*SCREEN_H/6.0)/1.5; 
-		float altura = 5*SCREEN_H/6.0;
-		al_draw_filled_rectangle(0 + dist_parede, 4*SCREEN_H/6.0 + dist_teto, dist_parede + largura, altura, al_map_rgb(80,112,188));
-		al_draw_filled_rectangle(SCREEN_W - dist_parede, 4*SCREEN_H/6.0 + dist_teto, SCREEN_W - dist_parede - largura, altura, al_map_rgb(80,112,188));
-	}
-
-
-	// elevador
-	// tela 4
-	if (policial.num_tela == 4){
-		// porta fechada
-		// 3º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(0,60,0));
-		// 2º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(0,60,0));
-		// 1º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(0,60,0));
-		// porta aberta
-		if(mundo.elevador.porta_aberta == 1){
-			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_porta, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao_porta, al_map_rgb(80,156,128));
-		}		
-		// chão do elevador
-		// 3º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(184,184,64));
-		// 2º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(184,184,64));
-		// 1º andar
-		al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(184,184,64));
-	}
-
-	// lama
-	for (i=0; i<6; i++){
-		if(mundo.lamas[i].num_sala == policial.num_tela){
-			al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
+	if (policial.num == NUM_POLICIAIS){
+		// tela 1
+		if (policial.num_tela == 1) {
+			float dist_parede = SCREEN_W/4.0;
+			float largura = SCREEN_W/6.0;
+			float dist_teto = (5*SCREEN_H/6.0 - 4*SCREEN_H/6.0)/1.5; 
+			float altura = 5*SCREEN_H/6.0;
+			al_draw_filled_rectangle(0 + dist_parede, 4*SCREEN_H/6.0 + dist_teto, dist_parede + largura, altura, al_map_rgb(80,112,188));
+			al_draw_filled_rectangle(SCREEN_W - dist_parede, 4*SCREEN_H/6.0 + dist_teto, SCREEN_W - dist_parede - largura, altura, al_map_rgb(80,112,188));
 		}
+
+
+		// elevador
+		// tela 4
+		if (policial.num_tela == 4){
+			// porta fechada
+			// 3º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(0,60,0));
+			// 2º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(0,60,0));
+			// 1º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(0,60,0));
+			// porta aberta
+			if(mundo.elevador.porta_aberta == 1){
+				al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_porta, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao_porta, al_map_rgb(80,156,128));
+			}		
+			// chão do elevador
+			// 3º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 2*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 2*SCREEN_H/6.0, al_map_rgb(184,184,64));
+			// 2º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8 - 1*SCREEN_H/6.0, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao - 1*SCREEN_H/6.0, al_map_rgb(184,184,64));
+			// 1º andar
+			al_draw_filled_rectangle(mundo.elevador.x, mundo.elevador.y_chao - policial.altura/8, mundo.elevador.x + mundo.elevador.largura, mundo.elevador.y_chao, al_map_rgb(184,184,64));
+		}
+
+		// lama
+		for (i=0; i<6; i++){
+			if(mundo.lamas[i].num_sala == policial.num_tela){
+				al_draw_filled_rectangle(mundo.lamas[i].x, mundo.lamas[i].y, mundo.lamas[i].x + mundo.lamas[i].largura, mundo.lamas[i].y_chao, al_map_rgb(150,75,0));
+			}
+		}
+
+		// poste dos bombeiros
+		if(mundo.poste.num_sala == policial.num_tela)
+			al_draw_filled_rectangle(mundo.poste.x, mundo.poste.y, mundo.poste.x + mundo.poste.largura, mundo.poste.y + mundo.poste.altura, al_map_rgb(0, 60, 0));
 	}
-
-	// poste dos bombeiros
-	if(mundo.poste.num_sala == policial.num_tela)
-		al_draw_filled_rectangle(mundo.poste.x, mundo.poste.y, mundo.poste.x + mundo.poste.largura, mundo.poste.y + mundo.poste.altura, al_map_rgb(0, 60, 0));
-
 	// ---------------------------------------------------------------------------------------------------
 	// mapa em baixo da tela
 
@@ -1469,7 +1460,9 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	al_draw_filled_rectangle(SCREEN_W/4.0, map_y0 + 5*map_sc_h/6.0 + largura2, 3*SCREEN_W/4.0, map_y0 + 5*map_sc_h/6.0 + 2*largura2, al_map_rgb(160,160,52));
 
 	// -- > mapa --> policial
-	al_draw_filled_rectangle(mundo.mapa.policial.x,mundo.mapa.policial.y,mundo.mapa.policial.x+mundo.mapa.policial.largura,mundo.mapa.policial.y+mundo.mapa.policial.altura,al_map_rgb(0,0,255));
+	for (po=0; po<NUM_POLICIAIS; po++){
+		al_draw_filled_rectangle(mundo.mapa.policiais[po].x,mundo.mapa.policiais[po].y,mundo.mapa.policiais[po].x+mundo.mapa.policiais[po].largura,mundo.mapa.policiais[po].y+mundo.mapa.policiais[po].altura,al_map_rgb(0,0,255));
+	}
 
 	// -- > mapa --> ladrao
 	al_draw_filled_rectangle(mundo.mapa.ladrao.x,mundo.mapa.ladrao.y,mundo.mapa.ladrao.x+mundo.mapa.ladrao.largura,mundo.mapa.ladrao.y+mundo.mapa.ladrao.altura,al_map_rgb(255,0,0));
@@ -1499,15 +1492,23 @@ void desenhar_cenario(Mundo mundo, Personagem policial) {
 	// ---------------------------------------------------------------------------------------------------
 }
 
-void desenhar_policial(Personagem policial, Mundo mundo) {
+void desenhar_policial(Personagem policial, Mundo mundo, Personagem policial_referencia) {
 	if (policial.dentro_elevador == 0 || (policial.dentro_elevador == 1 && mundo.elevador.porta_aberta == 1)){
-		al_draw_bitmap(policial.imagem, policial.x , policial.y, policial.orientacao);
+		if (policial.num != NUM_POLICIAIS){
+			if (policial.num_tela == policial_referencia.num_tela){
+				al_draw_filled_rectangle(policial.x + policial.largura/8, policial.y + + policial.altura/8, policial.x + 7*policial.largura/8, policial.y + 7*policial.altura/8, al_map_rgb(policial.rgb[0],policial.rgb[1],policial.rgb[2]));
+			}
+		}
+		else
+			al_draw_bitmap(policial.imagem, policial.x , policial.y, policial.orientacao);
 	}
 }
 
 void desenhar_ladrao(Personagem ladrao, Personagem policial) {
-	if (ladrao.num_tela == policial.num_tela){
-		al_draw_bitmap(ladrao.imagem, ladrao.x , ladrao.y, ladrao.orientacao);
+	if (policial.num == NUM_POLICIAIS){
+		if (ladrao.num_tela == policial.num_tela){
+			al_draw_bitmap(ladrao.imagem, ladrao.x , ladrao.y, ladrao.orientacao);
+		}
 	}
 }
 
@@ -1525,7 +1526,6 @@ void desenhar_tela_final(Personagem policial, Personagem ladrao, int tempo_captu
 		}
 
 		if (ia_jogando == 1){
-			al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W -10, 100, ALLEGRO_ALIGN_RIGHT, " vies: ", policial.vies);
 			al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W -10, 135, ALLEGRO_ALIGN_RIGHT, " Pesos:");
 			int k;
 			int l = 0;
@@ -1542,88 +1542,12 @@ void desenhar_tela_final(Personagem policial, Personagem ladrao, int tempo_captu
 	}
 }
 
-void escolher_acao(float input, Tecla *teclas, Personagem *policial) {
-    // Define o número de ações
-    const int num_acoes = 7;
-
-    // Calcula o valor absoluto do seno para garantir [0, 1]
-    float normalizado = fabs(sin(input));
-
-    // Calcula a ação com base no intervalo
-    int acao = (int)(normalizado * num_acoes);
-
-    // Garante que o índice da ação esteja no intervalo [0, 6]
-    if (acao >= num_acoes) 
-		acao = num_acoes - 1;
-
-	if ((*policial).quant_teclas == 5)
-		(*policial).tem_teclas_apertar = 0;
-	else
-		(*policial).tem_teclas_apertar = 1;
-
-	if ((*policial).quant_teclas == 0)
-		(*policial).tem_teclas_soltar = 0;
-	else
-		(*policial).tem_teclas_soltar = 1;
-
-	if ((*policial).tem_teclas_apertar == 1){
-		if ((*policial).apertar_nova_tecla == 1) {
-			if (acao == 0){
-				(*teclas).espaco = 1;
-				(*policial).quant_teclas += 1;
-			}
-			else if (acao == 1){
-				(*teclas).d = 1;
-				(*policial).quant_teclas += 1;
-			}
-			else if (acao == 2){
-				(*teclas).a = 1;
-				(*policial).quant_teclas += 1;
-			}
-			else if (acao == 3){
-				(*teclas).w = 1;
-				(*policial).quant_teclas += 1;
-			}
-			else if (acao == 4){
-				(*teclas).s = 1;
-				(*policial).quant_teclas += 1;
-			}
-			(*policial).apertar_nova_tecla = 0;
-		}
-	}
-
-	if ((*policial).tem_teclas_soltar == 1){
-		if ((*policial).soltar_uma_tecla == 1) {
-			if (acao == 0){
-				(*teclas).espaco = 0;
-				(*policial).quant_teclas -= 1;
-			}
-			else if (acao == 1){
-				(*teclas).d = 0;
-				(*policial).quant_teclas -= 1;
-			}
-			else if (acao == 2){
-				(*teclas).a = 0;
-				(*policial).quant_teclas -= 1;
-			}
-			else if (acao == 3){
-				(*teclas).w = 0;
-				(*policial).quant_teclas -= 1;
-			}
-			else if (acao == 4){
-				(*teclas).s = 0;
-				(*policial).quant_teclas -= 1;
-			}
-			(*policial).soltar_uma_tecla = 0;
-		}
-	}
-
-	if (acao == 5){
-		(*policial).apertar_nova_tecla = 1;
-	}
-	else if (acao == 6){
-		(*policial).soltar_uma_tecla = 1;
-	}
+void escolher_acao(Tecla *teclas, Personagem *policial) {
+	(*teclas).w = (*policial).outputs[0];	
+	(*teclas).s = (*policial).outputs[1];
+	(*teclas).a = (*policial).outputs[2];
+	(*teclas).d = (*policial).outputs[3];
+	(*teclas).espaco = (*policial).outputs[4];	
 }
 
 void verificar_teclas(ALLEGRO_EVENT ev, Tecla *teclas, int pressionado, int ia_jogando) {
@@ -1668,6 +1592,7 @@ int main(int argc, char **argv){
 
 	// Inicializa o gerador de números aleatórios
     srand(time(NULL));
+
 	
 	ALLEGRO_DISPLAY *display = NULL;
 	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
@@ -1829,40 +1754,44 @@ int main(int argc, char **argv){
 
 	// ------------------------- para IA -----------------------------------------------------
 	int ia_jogando = 1;
-	int num_max_policiais = 7;
+	int num_max_policiais = 100;
 	int num_policial = 1;
 	int num_melhor_policial = 1;
-	int num_2melhor_policial = 1;
-	int num_3melhor_policial = 1;
+	int num_melhor_policial2 = 1;
+	int num_melhor_policial3 = 1;
 	int geracao = 1;
+	int num_max_geracoes = 500; 
 	int geracao_melhor = 1;
-	int geracao_2melhor = 1;
-	int geracao_3melhor = 1;
+	int geracao_melhor2 = 1;
+	int geracao_melhor3 = 1;
 	int melhor_pontuacao = -32768;
-	int melhor_2pontuacao = -32768;
-	int melhor_3pontuacao = -32768;
-	float pesos_melhor[26];
-	float pesos_2melhor[26];
-	float pesos_3melhor[26];
-	int k;
-	for (k=0; k<26; k++){
-		pesos_melhor[k] = 0;
-		pesos_2melhor[k] = 0;
-		pesos_3melhor[k] = 0;
-	}
-	float vies_melhor = 0;
-	float vies_2melhor = 0;
-	float vies_3melhor = 0;
+	int melhor_pontuacao2 = -32768;
+	int melhor_pontuacao3 = -32768;
+	float menor_distancia = 2147483647;
+	float menor_distancia2 = 2147483647;
+	float menor_distancia3 = 2147483647;
+	int cont_vezes_melhor_repetiu = 0;
+	int num_max_repeticoes = 3;
+	int quantidade_repeticoes = 0;
+	int ultima_melhor_pontuacao = melhor_pontuacao;
+	int taxa_mutacao = 10;
+	float pesos_melhor[5][23];
+	float pesos_camada_oculta_melhor[5][5];
+	float pesos_melhor2[5][23];
+	float pesos_camada_oculta_melhor2[5][5];
+	float pesos_melhor3[5][23];
+	float pesos_camada_oculta_melhor3[5][5];
+	int teve_um_vencedor = 0;
 	// ---------------------------------------------------------------------------------------
 
 	//-------------------------- criação das structs -----------------------------------------
 
 	Tecla teclas;
-	Personagem policial;
+	Personagem policiais[NUM_POLICIAIS];
 	Personagem ladrao;
 	Mundo mundo;
 
-	inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
+	inicializar_structs(&teclas, policiais, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
 
 	// ---------------------------------------------------------------------------------------
 
@@ -1882,9 +1811,10 @@ int main(int argc, char **argv){
 	// ---------------------------------------------------------------------------------------
 	
 	//--------------------------- looping principal ------------------------------------------
-	
 	while(playing) 
 	{
+		int po;
+
 		ALLEGRO_EVENT ev;
 		// espera por um evento e o armazena na variavel de evento ev
 		al_wait_for_event(event_queue, &ev);
@@ -1902,65 +1832,78 @@ int main(int argc, char **argv){
 
 			// reinicializar
 			if (teclas.i == 1){
-				inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
 				playing = 1;
 				pause = 0;
 				tempo = 0;
 				tempo_simulado = 0;
-				policial.ganhou = 0;
+				
+				inicializar_structs(&teclas, policiais, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
+				
+				for (po=0; po<NUM_POLICIAIS; po++)
+					policiais[po].ganhou = 0;
+				
 				ladrao.ganhou = 0;
 			}
 
 			// limpa a tela
 			al_clear_to_color(al_map_rgb(0,0,0));
 
-			if (policial.ganhou == 0 && ladrao.ganhou == 0) {
+			for (po=0; po<NUM_POLICIAIS; po++){
+				if (policiais[po].ganhou == 1){
+					teve_um_vencedor = 1;
+					break;
+				}
+			}
+			
+			if (teve_um_vencedor == 0 && ladrao.ganhou == 0) {
 				
 				if (pause == 0) {
-					// verifica interações
-					verificar_interacoes(&policial, &ladrao, teclas, mundo, &tempo_captura, tempo_simulado, &record, ia_jogando);
 
-					if (ia_jogando == 1){
-						calcular_x_abs(&policial, &ladrao);
-						(policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policial, ladrao);
-						(policial).dist_y_ladrao_anterior = calcular_dist_policia_ladaro_y(policial, ladrao);
-					}
-
-					// atualiza posicões de tudo
-					atualizar_posicao_policial(&policial, &ladrao, teclas, mundo, tempo);
-					atualizar_posicao_ladrao(&ladrao, policial);
 					atualiza_posicao_elevador(&mundo, tempo);
-					atualiza_posicao_escada(&mundo, tempo, policial);
-					atualizar_mapa(&mundo, policial, ladrao);
-
-					if (ia_jogando == 1){
-						calcular_x_abs(&policial, &ladrao);
-						(policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(policial, ladrao);
-						(policial).dist_y_ladrao = calcular_dist_policia_ladaro_y(policial, ladrao);
-						if ((policial).dist_x_ladrao < (policial).menor_dist_x_ladrao)
-							(policial).menor_dist_x_ladrao = (policial).dist_x_ladrao;
-						if ((policial).dist_y_ladrao < (policial).menor_dist_y_ladrao)
-							(policial).menor_dist_y_ladrao = (policial).dist_y_ladrao;
+					atualiza_posicao_escada(&mundo, tempo, policiais[0]);
+					calcular_x_abs_ladrao(&ladrao);
+					for (po=0; po<NUM_POLICIAIS; po++){
+						(policiais[po]).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+					}
+					atualizar_posicao_ladrao(&ladrao, policiais[0]);
+					calcular_x_abs_ladrao(&ladrao);
+					for (po=0; po<NUM_POLICIAIS; po++){
+						(policiais[po]).dist_x_ladrao = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+						calcular_pontos(&policiais[po], ladrao);
+						/*if((tempo % (int)FPS) == 0){
+							calcular_pontos(&policiais[po], ladrao);
+						}*/
 					}
 
 					// anima personagens
-					animar_policial(&policial,  tempo);
-					animar_ladrao(&ladrao, tempo);
+					animar_policial(&policiais[NUM_POLICIAIS-1],  tempo);
 					
-					if (ia_jogando == 1) {
-						calcular_inputs(&policial, ladrao, mundo);
-						calcular_input_final(&policial);
-						escolher_acao(policial.input_final, &teclas, &policial);
-						if((tempo % (int)FPS) == 0){
-							calcular_pontos(&policial, ladrao);
-						}
+					desenhar_cenario(mundo, policiais[NUM_POLICIAIS-1]);
+					animar_ladrao(&ladrao, tempo);
+					desenhar_ladrao(ladrao, policiais[NUM_POLICIAIS-1]);
+					
+					
+					for (po=0; po<NUM_POLICIAIS; po++){
+						calcular_x_abs_policial(&policiais[po]);
+						(policiais[po]).x_abs_anterior = (policiais[po]).x_abs;
+						(policiais[po]).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+						calcular_inputs(&policiais[po], mundo);
+						calcular_outputs_camada_oculta(&policiais[po]);
+						calcular_outputs(&policiais[po]);
+						escolher_acao(&teclas, &policiais[po]);
+						atualizar_posicao_policial(&policiais[po], &ladrao, teclas, mundo, tempo);
+						verificar_interacoes(&policiais[po], &ladrao, teclas, mundo, &tempo_captura, tempo_simulado, &record, ia_jogando);
+						calcular_x_abs_policial(&policiais[po]);
+						(policiais[po]).dist_x_ladrao = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
+						calcular_pontos(&policiais[po], ladrao);
+						/*if((tempo % (int)FPS) == 0){
+							calcular_pontos(&policiais[po], ladrao);
+						}*/
+						desenhar_policial(policiais[po], mundo, policiais[NUM_POLICIAIS-1]);
 					}
+					atualizar_mapa(&mundo, policiais, ladrao);
+										
 				}
-
-				// desenha tudo
-				desenhar_cenario(mundo, policial);
-				desenhar_policial(policial, mundo);
-				desenhar_ladrao(ladrao, policial);
 
 				// escreve o tempo
 				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %ds", TEMPO_LIMITE - tempo_simulado);
@@ -1969,12 +1912,12 @@ int main(int argc, char **argv){
 				// dados ia
 				if (ia_jogando == 1){
 					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 10, ALLEGRO_ALIGN_RIGHT, "Geração: %d", geracao);
-					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 42, ALLEGRO_ALIGN_RIGHT, "Policial número: %d", num_policial);
-					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 74, ALLEGRO_ALIGN_RIGHT, "Pontos: %d", policial.pontos);
+					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 42, ALLEGRO_ALIGN_RIGHT, "Policial número: %d", policiais[NUM_POLICIAIS-1].num);
+					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 74, ALLEGRO_ALIGN_RIGHT, "Dist Ladrao: %.0f", policiais[NUM_POLICIAIS-1].dist_x_ladrao);
 				}
 
 				// registra tempo passado
-				if (pause == 0 && policial.ganhou == 0 && ladrao.ganhou == 0){
+				if (pause == 0 && teve_um_vencedor == 0 && ladrao.ganhou == 0){
 					tempo += 1;
 					if(tempo % (int)FPS == 0){
 						tempo_simulado += 1;
@@ -1992,295 +1935,216 @@ int main(int argc, char **argv){
 
 				// mostra quem ganhou
 				if (ia_jogando == 0)
-					desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
+					desenhar_tela_final(policiais[NUM_POLICIAIS-1], ladrao, tempo_captura, font, ia_jogando);
 				else{
 					if (ladrao.ganhou == 1){
-						calcular_pontos(&policial, ladrao);
-						if (policial.pontos > melhor_pontuacao){
-							int z;
-							geracao_3melhor = geracao_2melhor;
-							num_3melhor_policial = num_2melhor_policial;
-							melhor_3pontuacao = melhor_2pontuacao;
-							vies_3melhor = vies_2melhor;
-							for (z=0; z<26; z++){
-								pesos_3melhor[z] = pesos_2melhor[z];
+						int y, z;
+	
+						for (po=0; po<NUM_POLICIAIS; po++){
+
+							if (policiais[po].dist_x_ladrao <= menor_distancia){
+
+								if (policiais[po].dist_x_ladrao < menor_distancia && geracao > 1){
+									if (taxa_mutacao - 1 >= 3)
+										taxa_mutacao -= 1;
+								}
+								
+								geracao_melhor = policiais[po].geracao;
+								num_melhor_policial = policiais[po].num;
+								melhor_pontuacao = policiais[po].pontos;
+								menor_distancia = policiais[po].dist_x_ladrao;
+
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
 							}
-							geracao_2melhor = geracao_melhor;
-							num_2melhor_policial = num_melhor_policial;
-							melhor_2pontuacao = melhor_pontuacao;
-							vies_2melhor = vies_melhor;
-							for (z=0; z<26; z++){
-								pesos_2melhor[z] = pesos_melhor[z];
+							else if (policiais[po].dist_x_ladrao <= menor_distancia2){
+
+								geracao_melhor2 = policiais[po].geracao;
+								num_melhor_policial2 = policiais[po].num;
+								melhor_pontuacao2 = policiais[po].pontos;
+								menor_distancia2 = policiais[po].dist_x_ladrao;
+
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor2[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor2[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
 							}
-							geracao_melhor = policial.geracao;
-							num_melhor_policial = policial.num;
-							melhor_pontuacao = policial.pontos;
-							vies_melhor = policial.vies;
-							for (z=0; z<26; z++){
-								pesos_melhor[z] = policial.pesos[z];
+
+							else if (policiais[po].dist_x_ladrao <= menor_distancia3){
+
+								geracao_melhor3 = policiais[po].geracao;
+								num_melhor_policial3 = policiais[po].num;
+								melhor_pontuacao3 = policiais[po].pontos;
+								menor_distancia3 = policiais[po].dist_x_ladrao;
+
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor3[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor3[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
+							}
+
+						}
+
+						printf("################################################ geracao %d ################################################", geracao);
+						printf("\n");
+						printf("\n");
+						printf("Melhor policial: %d", num_melhor_policial);
+						printf("\n");
+						printf("Pontos: %d", melhor_pontuacao);
+						printf("\n");
+						printf("Dist do ladrao: %.0f", menor_distancia);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", pesos_melhor[y][z]);
 							}
 							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("1");
-							printf("\n");
-							printf("Geracao: %d", geracao_melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_melhor_policial);
-							printf("\n");
-							printf("Melhor pontuacao: %d", melhor_pontuacao);
-							printf("\n");
-							printf("Melhor vies: %f", vies_melhor);
-							printf("\n");
-							printf("Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", pesos_camada_oculta_melhor[y][z]);
 							}
 							printf("\n");
-							printf("########################################");
+						}
+						printf("\n");
+						printf("-----------------------------------------------------------------------------------------------------");
+						printf("\n");
+						printf("Policial numero %d", NUM_POLICIAIS);
+						printf("\n");
+						printf("Pontos: %d", policiais[NUM_POLICIAIS-1].pontos);
+						printf("\n");
+						printf("Dist do ladrao: %.0f", policiais[NUM_POLICIAIS-1].dist_x_ladrao);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", policiais[NUM_POLICIAIS-1].pesos[y][z]);
+							}
 							printf("\n");
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", policiais[NUM_POLICIAIS-1].pesos_camada_oculta[y][z]);
+							}
+							printf("\n");
+						}
+						printf("-----------------------------------------------------------------------------------------------------");
+						printf("\n");
 							
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("2");
-							printf("\n");
-							printf("Geracao: %d", geracao_2melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_2melhor_policial);
-							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
-							printf("\n");
-							printf("2o Melhor vies: %f", vies_2melhor);
-							printf("\n");
-							printf("2o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_2melhor[z]);
+						for (po=0; po<NUM_POLICIAIS; po++){
+							if (policiais[po].pontos == melhor_pontuacao){
+								policiais[po].eh_o_melhor = 1;
 							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
+							else{
+								policiais[po].eh_o_melhor = 0;
+							}
+						}
+						
+						geracao += 1;
+						if (geracao > num_max_geracoes /*|| quantidade_repeticoes > num_max_repeticoes*/){
+							geracao = 1;
+							melhor_pontuacao = -32768;
+							quantidade_repeticoes = 0;
+							taxa_mutacao = 6;
+						}
+						for (po=0; po<NUM_POLICIAIS; po++)
+							policiais[po].geracao = geracao;				
 
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("3");
-							printf("\n");
-							printf("Geracao: %d", geracao_3melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_3melhor_policial);
-							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
-							printf("\n");
-							printf("3o Melhor vies: %f", vies_3melhor);
-							printf("\n");
-							printf("3o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_3melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-						}
-						else if (policial.pontos > melhor_2pontuacao){
-							int z;
-							geracao_3melhor = geracao_2melhor;
-							num_3melhor_policial = num_2melhor_policial;
-							melhor_3pontuacao = melhor_2pontuacao;
-							vies_3melhor = vies_2melhor;
-							for (z=0; z<26; z++){
-								pesos_3melhor[z] = pesos_2melhor[z];
-							}
-							geracao_2melhor = policial.geracao;
-							num_2melhor_policial = policial.num;
-							melhor_2pontuacao = policial.pontos;
-							vies_2melhor = policial.vies;
-							for (z=0; z<26; z++){
-								pesos_2melhor[z] = policial.pesos[z];
-							}
-							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("1");
-							printf("\n");
-							printf("Geracao: %d", geracao_melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_melhor_policial);
-							printf("\n");
-							printf("Melhor pontuacao: %d", melhor_pontuacao);
-							printf("\n");
-							printf("Melhor vies: %f", vies_melhor);
-							printf("\n");
-							printf("Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("2");
-							printf("\n");
-							printf("Geracao: %d", geracao_2melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_2melhor_policial);
-							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
-							printf("\n");
-							printf("2o Melhor vies: %f", vies_2melhor);
-							printf("\n");
-							printf("2o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_2melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("3");
-							printf("\n");
-							printf("Geracao: %d", geracao_3melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_3melhor_policial);
-							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
-							printf("\n");
-							printf("3o Melhor vies: %f", vies_3melhor);
-							printf("\n");
-							printf("3o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_3melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-						}
-						else if (policial.pontos > melhor_3pontuacao){
-							int z;
-							geracao_3melhor = policial.geracao;
-							num_3melhor_policial = policial.num;
-							melhor_3pontuacao = policial.pontos;
-							vies_3melhor = policial.vies;
-							for (z=0; z<26; z++){
-								pesos_3melhor[z] = policial.pesos[z];
-							}
-							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("1");
-							printf("\n");
-							printf("Geracao: %d", geracao_melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_melhor_policial);
-							printf("\n");
-							printf("Melhor pontuacao: %d", melhor_pontuacao);
-							printf("\n");
-							printf("Melhor vies: %f", vies_melhor);
-							printf("\n");
-							printf("Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("2");
-							printf("\n");
-							printf("Geracao: %d", geracao_2melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_2melhor_policial);
-							printf("\n");
-							printf("2a Melhor pontuacao: %d", melhor_2pontuacao);
-							printf("\n");
-							printf("2o Melhor vies: %f", vies_2melhor);
-							printf("\n");
-							printf("2o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_2melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("3");
-							printf("\n");
-							printf("Geracao: %d", geracao_3melhor);
-							printf("\n");
-							printf("Numero do policial: %d", num_3melhor_policial);
-							printf("\n");
-							printf("3a Melhor pontuacao: %d", melhor_3pontuacao);
-							printf("\n");
-							printf("3o Melhor vies: %f", vies_3melhor);
-							printf("\n");
-							printf("3o Melhores pesos:");
-							printf("\n");
-							for (z=0; z<26; z++){
-								printf(" [%f] ", pesos_3melhor[z]);
-							}
-							printf("\n");
-							printf("########################################");
-							printf("\n");
-							printf("===================================================================");
-							printf("\n");
-						}
-
-						if (policial.num < num_max_policiais){
-							num_policial += 1;
-						}
-						else{
-							geracao += 1;
-							policial.geracao = geracao;
-							num_policial = 1;
-							printf("\n");
-							printf("XXXXXXXXXXXXXXXXXXXXX MUDOU DE GERAÇÃO XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-							printf("\n");
-						}
-						inicializar_structs(&teclas, &policial, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
+						inicializar_structs(&teclas, policiais, imagem_policial, &ladrao, imagem_ladrao, &mundo, imagem_cidade, imagem_policial_vitorioso, imagem_ladrao_vitorioso, imagem_policial2, imagem_policial3,  imagem_policial4, imagem_ladrao2, imagem_ladrao3, imagem_ladrao4, num_policial, ia_jogando);
 						
 						playing = 1;
 						pause = 0;
 						tempo = 0;
 						tempo_simulado = 0;
-						policial.ganhou = 0;
+						for(po=0;po<NUM_POLICIAIS;po++)
+							policiais[po].ganhou = 0;
 						ladrao.ganhou = 0;
 						
 						if(geracao > 1){
-							mutar_policial(&policial, pesos_melhor, pesos_2melhor, pesos_3melhor,vies_melhor, vies_2melhor, vies_3melhor,num_max_policiais);
+							for (po=0; po<NUM_POLICIAIS; po++)
+								mutar_policial(&policiais[po], pesos_melhor, pesos_camada_oculta_melhor,num_max_policiais, taxa_mutacao, pesos_melhor2, pesos_camada_oculta_melhor2, pesos_melhor3, pesos_camada_oculta_melhor3);
 						}
 					}
-					else if (policial.ganhou == 1){
-						desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
+					else if (teve_um_vencedor == 1){
+						int y, z;
+						for (po=0; po<NUM_POLICIAIS; po++){
+							if (policiais[po].ganhou == 1){
+								geracao_melhor = policiais[po].geracao;
+								num_melhor_policial = policiais[po].num;
+								melhor_pontuacao = policiais[po].pontos;
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
+							}
+						
+						}
+
+						printf("################################################ dados do vencedor ################################################");
+						printf("\n");
+						printf("\n");
+						printf("Melhor policial: %d", num_melhor_policial);
+						printf("\n");
+						printf("Pontos: %d", melhor_pontuacao);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", pesos_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", pesos_camada_oculta_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+
+						teve_um_vencedor = 0;
+
+						//desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
+						playing = 0;
 					}					
 				}
 

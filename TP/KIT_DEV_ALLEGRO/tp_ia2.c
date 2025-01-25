@@ -1,4 +1,4 @@
-// versao 2.2
+// // policial treinado
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -66,6 +66,7 @@ typedef struct Personagem{
 	int geracao;
 	int pontos;
 	float x_abs;
+	float x_abs_anterior;
 	float dist_x_inicial;
 	float dist_x_ladrao_anterior;
 	float dist_x_ladrao;
@@ -185,14 +186,14 @@ const int NUM_POLICIAIS = 50;
 // ---------------------------------------------------------------------------------------------------
 // Funções
 
-void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos_camada_oculta_melhor[5][5], int num_max_policiais, int taxa_mutacao){
+void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos_camada_oculta_melhor[5][5], int num_max_policiais, int taxa_mutacao, float pesos_melhor2[5][23], float pesos_camada_oculta_melhor2[5][5], float pesos_melhor3[5][23], float pesos_camada_oculta_melhor3[5][5]){
 	// print teste
 	int i, j, acrescimo;
 	for (i=0; i<5; i++){
 		for (j=0; j<23; j++){
 			if ((*policial).num == NUM_POLICIAIS)
 				(*policial).pesos[i][j] = pesos_melhor[i][j];
-			else{
+			else if((*policial).num % 2 == 0){
 				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
 				acrescimo = taxa_mutacao*((rand() % 201) - 100);
 				if (pesos_melhor[i][j] + (float)acrescimo > 1000)
@@ -202,13 +203,36 @@ void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos
 				else
 					(*policial).pesos[i][j] = pesos_melhor[i][j] + (float)acrescimo;
 			}
+			else if((*policial).num % 3 == 0){
+				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
+				acrescimo = (taxa_mutacao+1)*((rand() % 201) - 100);
+				if (pesos_melhor2[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos[i][j] = 1000.0;
+				else if (pesos_melhor2[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos[i][j] = -1000.0;
+				else
+					(*policial).pesos[i][j] = pesos_melhor2[i][j] + (float)acrescimo;
+			}
+			else{
+				// "acrescimo" de valor int no intervalo taxa_mutacao * [-100, 100]
+				acrescimo = (taxa_mutacao+2)*((rand() % 201) - 100);
+				if (pesos_melhor3[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos[i][j] = 1000.0;
+				else if (pesos_melhor3[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos[i][j] = -1000.0;
+				else
+					(*policial).pesos[i][j] = pesos_melhor3[i][j] + (float)acrescimo;
+			}
 		}
 	}
 	for (i=0; i<5; i++){
 		for (j=0; j<5; j++){
 			if ((*policial).num == NUM_POLICIAIS)
 				(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor[i][j];
-			else{
+			else if((*policial).num == NUM_POLICIAIS - 1){
+				(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor2[i][j];
+			}
+			else if((*policial).num % 2 == 0){
 				// "acrescimo" de valor int no intervalo [-300, 300] convertido para float
 				acrescimo = taxa_mutacao*((rand() % 201) - 100);
 				if (pesos_camada_oculta_melhor[i][j] + (float)acrescimo > 1000)
@@ -218,26 +242,68 @@ void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos
 				else
 					(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor[i][j] + (float)acrescimo;
 			}
+			else{
+				// "acrescimo" de valor int no intervalo [-300, 300] convertido para float
+				acrescimo = taxa_mutacao*((rand() % 201) - 100);
+				if (pesos_camada_oculta_melhor2[i][j] + (float)acrescimo > 1000)
+					(*policial).pesos_camada_oculta[i][j] = 1000.0;
+				else if (pesos_camada_oculta_melhor2[i][j] + (float)acrescimo < -1000)
+					(*policial).pesos_camada_oculta[i][j] = -1000.0;
+				else
+					(*policial).pesos_camada_oculta[i][j] = pesos_camada_oculta_melhor2[i][j] + (float)acrescimo;
+			}
 		}
 	}
 }
 
 void calculcar_pesos(Personagem *policial){
 	int i, j;
-	for (i=0; i<5; i++){
-		for (j=0; j<23; j++){
-			// valor int no intervalo [-1000, 1000] convertido para float
-			(*policial).pesos[i][j] = (float)((rand() % 2001) - 1000);
+	if ((*policial).num == NUM_POLICIAIS){
+        float p[5][23] = { 
+		{337, -487, 289, -226, 1000, -1000, 378, 1000, -883, -460, 379, 145, 1000, -803, 1000, -284, -1000, 56, 76, 9, 235, -622, 508},
+        {-892, 613, -388, -46, -822, -1000, -1000, 663, 1000, -969, 65, 1000, 1000, -244, 1000, 1000, -171, -62, -606, -1000, 833, 991, 67},
+        {-640, 316, 118, 397, -1000, -1000, -58, -587, 44, -982, 1000, 208, -973, -205, 562, -208, 523, 652, 343, -3, 380, -504, 577},
+        {-955, -460, -204, 124, -342, 32, -486, -811, 218, -622, 1000, -856, 783, -460, -742, -433, 37, -505, 685, -349, 1000, -24, 387},
+        {1000, -46, -415, -115, -574, 464, -78, 242, -982, -181, -341,-1000, -1000, -856, -523, 1000, -1000, -991, 106, -1000, 61, 1000, 848}
+    	};
+		for (i=0; i<5; i++){
+			for (j=0; j<23; j++){
+				(*policial).pesos[i][j] = p[i][j];
+			}
+		}
+	}
+	else{
+		for (i=0; i<5; i++){
+			for (j=0; j<23; j++){
+				// valor int no intervalo [-1000, 1000] convertido para float
+				(*policial).pesos[i][j] = (float)((rand() % 2001) - 1000);
+			}
 		}
 	}
 }
 
 void calculcar_pesos_camada_oculta(Personagem *policial){
 	int i, j;
-	for (i=0; i<5; i++){
-		for (j=0; j<5; j++){
-			// valor int no intervalo [-1000, 1000] convertido para float
-			(*policial).pesos_camada_oculta[i][j] = (float)((rand() % 2001) - 1000);
+	if ((*policial).num == NUM_POLICIAIS){
+		float p_oculta[5][5] = {
+		{-1000, -94, 1000, 93, 1000},
+		{-390, 1000, -414, -616, 538},
+		{-768, -835, 238, -688, 1000},
+		{-608, -688, -336, -48, 358},
+		{-352, -712, 216, 1000, 416}
+		};
+		for (i=0; i<5; i++){
+			for (j=0; j<5; j++){
+				(*policial).pesos_camada_oculta[i][j] = p_oculta[i][j];
+			}
+		}
+	}
+	else{
+		for (i=0; i<5; i++){
+			for (j=0; j<5; j++){
+				// valor int no intervalo [-1000, 1000] convertido para float
+				(*policial).pesos_camada_oculta[i][j] = (float)((rand() % 2001) - 1000);
+			}
 		}
 	}
 }
@@ -326,9 +392,9 @@ float calcular_dist_policia_ladaro_x(Personagem policial, Personagem ladrao){
 
 void calcular_pontos(Personagem *policial, Personagem ladrao){
 	if ((*policial).andar == ladrao.andar){
-		(*policial).pontos += 1;
+		(*policial).pontos += 4;
 		if ((*policial).num_tela == ladrao.num_tela){
-			(*policial).pontos += 1;
+			(*policial).pontos += 4;
 		}
 	}
 
@@ -338,9 +404,13 @@ void calcular_pontos(Personagem *policial, Personagem ladrao){
 	else if ((*policial).dist_x_ladrao > (*policial).dist_x_ladrao_anterior){
 		(*policial).pontos -= 3;
 	}
+	
+	if ((*policial).x_abs == (*policial).x_abs_anterior){
+		(*policial).pontos -= 1;
+	}
 
 	if ((*policial).na_lama == 1){
-		(*policial).pontos -= 4;
+		(*policial).pontos -= 10;
 	}
 }
 
@@ -695,6 +765,7 @@ void inicializar_structs(Tecla *teclas, Personagem policiais[NUM_POLICIAIS], ALL
 			calcular_outputs_camada_oculta(&policiais[i]);
 			calcular_outputs(&policiais[i]);
 			calcular_x_abs_policial(&policiais[i]);
+			policiais[i].x_abs_anterior = policiais[i].x_abs;
 			policiais[i].dist_x_inicial = calcular_dist_policia_ladaro_x(policiais[i], *ladrao);
 			policiais[i].dist_x_ladrao_anterior = policiais[i].dist_x_inicial;
 			policiais[i].dist_x_ladrao = policiais[i].dist_x_ladrao_anterior;
@@ -944,9 +1015,14 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).y -= (*policial).vy * mundo.dt; 
 		// só pode pular para o lado se não passar das paredes
 		if((*policial).x_global > 0 && (*policial).x_global + (*policial).largura < 4*SCREEN_W){
+			calcular_x_abs_policial(policial);
+			(*policial).x_abs_anterior = (*policial).x_abs;
+			(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 			(*policial).x_global += (*policial).vx * (*policial).direcao_pulo;
 			(*policial).x = (int)(*policial).x_global % SCREEN_W;
 			calcular_x_abs_policial(policial);
+			(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+			calcular_pontos(policial, *ladrao);
 		}
 		// colando no chão
 		if ((*policial).y > (*policial).y_chao - (*policial).altura){
@@ -984,19 +1060,29 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 	}
 	// sobe ou desce com o elevador.
 	if ((*policial).dentro_elevador == 1){
+		calcular_x_abs_policial(policial);
+		(*policial).x_abs_anterior = (*policial).x_abs;
+		(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 		(*policial).y = mundo.elevador.y_porta + (*policial).altura/4;
 		(*policial).y_chao = mundo.elevador.y_chao_porta;
 		(*policial).andar = mundo.elevador.andar;
 		calcular_x_abs_policial(policial);
+		(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		calcular_pontos(policial, *ladrao);
 	}
 
 	// subir na escada
 	if((*policial).dentro_escada == 1){
 		(*policial).y_chao = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura;
 		(*policial).y = (*policial).y_chao - (*policial).altura;
+		calcular_x_abs_policial(policial);
+		(*policial).x_abs_anterior = (*policial).x_abs;
+		(*policial).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(*policial, *ladrao);
 		(*policial).x_global = mundo.escadas[(*policial).escada_num].degraus[(*policial).degrau_num].x_global;
 		(*policial).x = (int)(*policial).x_global % SCREEN_W;
 		calcular_x_abs_policial(policial);
+		(*policial).dist_x_ladrao = calcular_dist_policia_ladaro_x(*policial, *ladrao);
+		calcular_pontos(policial, *ladrao);
 		if((*policial).y_chao <= mundo.escadas[(*policial).escada_num].teto.y_chao - mundo.escadas[(*policial).escada_num].degraus[0].altura){
 			(*policial).dentro_escada = 0;
 			(*policial).escada_num = -1;
@@ -1026,7 +1112,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	// foge ladrão
 	// se o policial tiver na mesma tela e andar do ladrão, ele foge pro outro lado com 25% a mais de velocidade
-	if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
+	/*if (policial.x_global < (*ladrao).x_global && policial.andar == (*ladrao).andar && policial.dentro_elevador == 0 && policial.num_tela == (*ladrao).num_tela){
 		(*ladrao).orientacao = 0;
 		(*ladrao).vx = 1.25*(*ladrao).vx_inicial;
 	}
@@ -1036,7 +1122,7 @@ void atualizar_posicao_ladrao(Personagem *ladrao, Personagem policial) {
 	}
 	else {
 		(*ladrao).vx = (*ladrao).vx_inicial;
-	}
+	}*/
 
 	// andando
 	int direcao_andar;
@@ -1703,17 +1789,30 @@ int main(int argc, char **argv){
 	int num_max_policiais = 100;
 	int num_policial = 1;
 	int num_melhor_policial = 1;
+	int num_melhor_policial2 = 1;
+	int num_melhor_policial3 = 1;
 	int geracao = 1;
-	int num_max_geracoes = 100; 
+	int num_max_geracoes = 500; 
 	int geracao_melhor = 1;
+	int geracao_melhor2 = 1;
+	int geracao_melhor3 = 1;
 	int melhor_pontuacao = -32768;
+	int melhor_pontuacao2 = -32768;
+	int melhor_pontuacao3 = -32768;
+	float menor_distancia = 2147483647;
+	float menor_distancia2 = 2147483647;
+	float menor_distancia3 = 2147483647;
 	int cont_vezes_melhor_repetiu = 0;
 	int num_max_repeticoes = 3;
 	int quantidade_repeticoes = 0;
 	int ultima_melhor_pontuacao = melhor_pontuacao;
-	int taxa_mutacao = 9;
+	int taxa_mutacao = 10;
 	float pesos_melhor[5][23];
 	float pesos_camada_oculta_melhor[5][5];
+	float pesos_melhor2[5][23];
+	float pesos_camada_oculta_melhor2[5][5];
+	float pesos_melhor3[5][23];
+	float pesos_camada_oculta_melhor3[5][5];
 	int teve_um_vencedor = 0;
 	// ---------------------------------------------------------------------------------------
 
@@ -1818,6 +1917,7 @@ int main(int argc, char **argv){
 					
 					for (po=0; po<NUM_POLICIAIS; po++){
 						calcular_x_abs_policial(&policiais[po]);
+						(policiais[po]).x_abs_anterior = (policiais[po]).x_abs;
 						(policiais[po]).dist_x_ladrao_anterior = calcular_dist_policia_ladaro_x(policiais[po], ladrao);
 						calcular_inputs(&policiais[po], mundo);
 						calcular_outputs_camada_oculta(&policiais[po]);
@@ -1845,7 +1945,7 @@ int main(int argc, char **argv){
 				if (ia_jogando == 1){
 					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 10, ALLEGRO_ALIGN_RIGHT, "Geração: %d", geracao);
 					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 42, ALLEGRO_ALIGN_RIGHT, "Policial número: %d", policiais[NUM_POLICIAIS-1].num);
-					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 74, ALLEGRO_ALIGN_RIGHT, "Pontos: %d", policiais[NUM_POLICIAIS-1].pontos);
+					al_draw_textf(font, al_map_rgb(255, 255, 255), SCREEN_W - 10, 74, ALLEGRO_ALIGN_RIGHT, "Dist Ladrao: %.0f", policiais[NUM_POLICIAIS-1].dist_x_ladrao);
 				}
 
 				// registra tempo passado
@@ -1874,16 +1974,17 @@ int main(int argc, char **argv){
 	
 						for (po=0; po<NUM_POLICIAIS; po++){
 
-							if (policiais[po].pontos >= melhor_pontuacao){
+							if (policiais[po].dist_x_ladrao <= menor_distancia){
 
-								if (policiais[po].pontos > melhor_pontuacao && geracao > 1){
-									if (taxa_mutacao - 1 >= 1)
+								if (policiais[po].dist_x_ladrao < menor_distancia && geracao > 1){
+									if (taxa_mutacao - 1 >= 3)
 										taxa_mutacao -= 1;
 								}
 								
 								geracao_melhor = policiais[po].geracao;
 								num_melhor_policial = policiais[po].num;
 								melhor_pontuacao = policiais[po].pontos;
+								menor_distancia = policiais[po].dist_x_ladrao;
 
 								for (y=0; y<5; y++){
 									for (z=0; z<23; z++){
@@ -1896,6 +1997,43 @@ int main(int argc, char **argv){
 									}
 								}
 							}
+							else if (policiais[po].dist_x_ladrao <= menor_distancia2){
+
+								geracao_melhor2 = policiais[po].geracao;
+								num_melhor_policial2 = policiais[po].num;
+								melhor_pontuacao2 = policiais[po].pontos;
+								menor_distancia2 = policiais[po].dist_x_ladrao;
+
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor2[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor2[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
+							}
+
+							else if (policiais[po].dist_x_ladrao <= menor_distancia3){
+
+								geracao_melhor3 = policiais[po].geracao;
+								num_melhor_policial3 = policiais[po].num;
+								melhor_pontuacao3 = policiais[po].pontos;
+								menor_distancia3 = policiais[po].dist_x_ladrao;
+
+								for (y=0; y<5; y++){
+									for (z=0; z<23; z++){
+										pesos_melhor3[y][z] = policiais[po].pesos[y][z];
+									}
+								}
+								for (y=0; y<5; y++){
+									for (z=0; z<5; z++){
+										pesos_camada_oculta_melhor3[y][z] = policiais[po].pesos_camada_oculta[y][z];
+									}
+								}
+							}
 
 						}
 
@@ -1905,6 +2043,8 @@ int main(int argc, char **argv){
 						printf("Melhor policial: %d", num_melhor_policial);
 						printf("\n");
 						printf("Pontos: %d", melhor_pontuacao);
+						printf("\n");
+						printf("Dist do ladrao: %.0f", menor_distancia);
 						printf("\n");
 						printf("Pesos: ");
 						printf("\n");
@@ -1929,6 +2069,8 @@ int main(int argc, char **argv){
 						printf("Policial numero %d", NUM_POLICIAIS);
 						printf("\n");
 						printf("Pontos: %d", policiais[NUM_POLICIAIS-1].pontos);
+						printf("\n");
+						printf("Dist do ladrao: %.0f", policiais[NUM_POLICIAIS-1].dist_x_ladrao);
 						printf("\n");
 						printf("Pesos: ");
 						printf("\n");
@@ -1981,7 +2123,7 @@ int main(int argc, char **argv){
 						
 						if(geracao > 1){
 							for (po=0; po<NUM_POLICIAIS; po++)
-								mutar_policial(&policiais[po], pesos_melhor, pesos_camada_oculta_melhor,num_max_policiais, taxa_mutacao);
+								mutar_policial(&policiais[po], pesos_melhor, pesos_camada_oculta_melhor,num_max_policiais, taxa_mutacao, pesos_melhor2, pesos_camada_oculta_melhor2, pesos_melhor3, pesos_camada_oculta_melhor3);
 						}
 					}
 					else if (teve_um_vencedor == 1){
@@ -2004,6 +2146,34 @@ int main(int argc, char **argv){
 							}
 						
 						}
+
+						printf("################################################ dados do vencedor ################################################");
+						printf("\n");
+						printf("\n");
+						printf("Melhor policial: %d", num_melhor_policial);
+						printf("\n");
+						printf("Pontos: %d", melhor_pontuacao);
+						printf("\n");
+						printf("Pesos: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<23; z++){
+								printf("[%.0f]", pesos_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+						printf("Pesos camada oculta: ");
+						printf("\n");
+						for (y=0; y<5; y++){
+							for (z=0; z<5; z++){
+								printf("[%.0f]", pesos_camada_oculta_melhor[y][z]);
+							}
+							printf("\n");
+						}
+						printf("\n");
+
+						teve_um_vencedor = 0;
 
 						//desenhar_tela_final(policial, ladrao, tempo_captura, font, ia_jogando);
 						playing = 0;
