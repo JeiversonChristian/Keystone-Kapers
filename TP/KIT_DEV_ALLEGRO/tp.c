@@ -1,4 +1,4 @@
-// versao 25
+// versao Final
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -55,7 +55,7 @@ typedef struct Personagem{
 	int degrau_num; // de controle em conjunto com dentro_escada
 	int na_lama; // variável de controle
 	int ganhou; // variável de controle
-	int no_poste;
+	int no_poste; //  variável de controle
 }Personagem;
 
 typedef struct Elevador{
@@ -153,7 +153,7 @@ typedef struct Mundo{
 
 const float FPS = 60; 
 // dimensão 4:3 -> 4x230 = 920 e 3x230 = 690
-const int SCREEN_W = 960;
+const int SCREEN_W = 920; // eu tinha colocado 960 por engano, espero que não dê nenhum erro
 const int SCREEN_H = 690;
 const int TEMPO_LIMITE = 80;
 // ---------------------------------------------------------------------------------------------------
@@ -162,6 +162,8 @@ const int TEMPO_LIMITE = 80;
 // Funções
 
 void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *imagem_policial, Personagem *ladrao, ALLEGRO_BITMAP *imagem_ladrao, Mundo *mundo, ALLEGRO_BITMAP *imagem_cidade, ALLEGRO_BITMAP *imagem_policial_vitorioso, ALLEGRO_BITMAP *imagem_ladrao_vitorioso, ALLEGRO_BITMAP *imagem_policial2, ALLEGRO_BITMAP *imagem_policial3, ALLEGRO_BITMAP *imagem_policial4, ALLEGRO_BITMAP *imagem_ladrao2, ALLEGRO_BITMAP *imagem_ladrao3, ALLEGRO_BITMAP *imagem_ladrao4){
+	
+	// variáveis para os "for"
 	int i;
 	int j;
 
@@ -190,8 +192,6 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*ladrao).x = SCREEN_W/4 - (*ladrao).largura/2;; // 1/4 de um do andar
 	(*ladrao).x_global = 0*SCREEN_W + (*ladrao).x; // na 4ª sala (tela)
 	(*ladrao).y = 4*SCREEN_H/6.0 - (*ladrao).altura; // andar do meio
-	//(*ladrao).vx_inicial = 3.1; // ligeiramente mais lento que o policial
-	// a velocidade é o tempo suficiente pra ir lá em cima e volta mais ou menos
 	(*ladrao).vx_inicial = 3.0; 
 	(*ladrao).vx = (*ladrao).vx_inicial;
 	(*ladrao).vy = 0;
@@ -326,6 +326,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].num_sala = 1;
 	(*mundo).escadas[1].andar = 2;
 
+	// degrau do pé da escada
 	(*mundo).escadas[1].degraus[0].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[0].altura = 0.8*(SCREEN_H/6)/8; // 80% de 1/8 de um andar
 	(*mundo).escadas[1].degraus[0].x_global = 4*SCREEN_W - SCREEN_W/2 - (*mundo).escadas[1].degraus[0].largura;
@@ -340,6 +341,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 	(*mundo).escadas[1].pe.y_chao = (*mundo).escadas[1].degraus[0].y_chao;
 	(*mundo).escadas[1].pe.num = 0;
 
+	// degraus do meio da escada
 	for (i=1; i<12; i++){
 		(*mundo).escadas[1].degraus[i].largura = (*policial).largura/2;
 		(*mundo).escadas[1].degraus[i].altura = 0.8*(SCREEN_H/6)/8;
@@ -350,6 +352,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 		(*mundo).escadas[1].degraus[i].num = i;
 	}
 
+	// degrau do teto
 	(*mundo).escadas[1].degraus[12].largura = (*policial).largura/2;
 	(*mundo).escadas[1].degraus[12].altura = 0.8*(SCREEN_H/6)/8;
 	(*mundo).escadas[1].degraus[12].x_global = (*mundo).escadas[1].degraus[11].x_global + (*mundo).escadas[1].degraus[12].largura;
@@ -498,6 +501,7 @@ void inicializar_structs(Tecla *teclas, Personagem *policial, ALLEGRO_BITMAP *im
 }
 
 void verificar_interacoes(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo, int *tempo_captura, int tempo_simulado, int *record){
+
 	int i;
 	int j;
 
@@ -660,6 +664,7 @@ void animar_ladrao(Personagem *ladrao, int tempo){
 }
 
 void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla teclas, Mundo mundo, int tempo){
+	
 	int i, j;
 
 	// andar para esquerda
@@ -756,7 +761,7 @@ void atualizar_posicao_policial(Personagem *policial, Personagem *ladrao, Tecla 
 		(*policial).num_tela = 4;
 	}
 
-	// entrar elevador
+	// sair do elevador
 	if (teclas.s == 1){
 		if((*policial).dentro_elevador == 1 && mundo.elevador.porta_aberta == 1){
 			(*policial).pode_pular = 1;
@@ -924,10 +929,12 @@ void atualiza_posicao_elevador(Mundo *mundo, int tempo){
 
 void atualiza_posicao_escada(Mundo *mundo, int tempo, Personagem policial){
 	if (tempo % ((int)FPS/24) == 0){
+
 		int i;
 		int j;
 		int num_teto;
 		int num_pe;
+
 		if (policial.andar == (*mundo).escadas[1].andar && policial.num_tela == (*mundo).escadas[1].num_sala && policial.dentro_elevador == 0){
 
 			// escada 1 -> 1ª tela, 2º andar
@@ -1509,6 +1516,17 @@ int main(int argc, char **argv){
 					// anima personagens
 					animar_policial(&policial,  tempo);
 					animar_ladrao(&ladrao, tempo);
+
+					// registra tempo passado
+					tempo += 1;
+					if(tempo % (int)FPS == 0){
+						tempo_simulado += 1;
+					}
+
+					// verificar se o tempo acabou
+					if (tempo_simulado >= TEMPO_LIMITE){
+						ladrao.ganhou = 1;
+					}
 				}
 
 				// desenha tudo
@@ -1519,19 +1537,6 @@ int main(int argc, char **argv){
 				// escreve o tempo
 				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 10, ALLEGRO_ALIGN_LEFT, "Tempo restante: %ds", TEMPO_LIMITE - tempo_simulado);
 				al_draw_textf(font, al_map_rgb(255, 255, 255), 10, 42, ALLEGRO_ALIGN_LEFT, "Tempo que já passou: %ds", tempo_simulado);
-
-				// registra tempo passado
-				if (pause == 0 && policial.ganhou == 0 && ladrao.ganhou == 0){
-					tempo += 1;
-					if(tempo % (int)FPS == 0){
-						tempo_simulado += 1;
-					}
-				}
-
-				// verificar se acabaou o jogo
-				if (tempo_simulado >= TEMPO_LIMITE){
-					ladrao.ganhou = 1;
-				}
 			}
 			else{
 				//pausa do jogo

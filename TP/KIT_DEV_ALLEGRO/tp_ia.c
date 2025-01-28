@@ -1,4 +1,4 @@
-// versao final, só falta organizar
+// versao IA
 // ---------------------------------------------------------------------------------------------------
 // Bibliotecas
 
@@ -258,22 +258,80 @@ void mutar_policial(Personagem *policial, float pesos_melhor[5][23], float pesos
 
 void calculcar_pesos(Personagem *policial){
 	int i, j;
+
+	// para treinar o policial ------------------------------------------------
 	for (i=0; i<5; i++){
 		for (j=0; j<23; j++){
 			// valor int no intervalo [-1000, 1000] convertido para float
 			(*policial).pesos[i][j] = (float)((rand() % 2001) - 1000);
 		}
 	}
+	// -----------------------------------------------------------------------
+
+	// para mostrar o policial treinado -----------------------------------------------------------------------------------------
+	/*if ((*policial).num == NUM_POLICIAIS){
+
+		float p[5][23] = { 
+		{-720, 1000, -1000, 70, -765, 111, 676, -424, -1000, 940, 861, -473, -351, -599, -956, 752, 223, 50, 376, 1000, 800, 1000, -269},
+        {144, 1000, -744, 143, 1000, 67, -522, -1000, 490, -285, -889, 431, -284, 11, 200, -416, -750, -406, -493, -993, 1000, -122, 137},
+        {-1000, 910, 1, 741, -470, -1000, -1000, -710, 1000, 33, -94, -16, 84, 420, 6, 1000, -754, 395, 194, 1000, -60, -1000, -665},
+        {-502, 1000, -645, -1000, 1000, 122, -1000, 1000, 1000, -31, 88, 1000, -1000, -1000, 218, -1000, -528, -63, 1000, 596, -626, 856, 640},
+        {-58, -216, -902, 1000, 450, -1000, 1000, 1000, 311, 92, 215, -925, 58, 682, -439, -480, -920, 170, 350, 1000, 360, -690, 1000}
+    	};
+		for (i=0; i<5; i++){
+			for (j=0; j<23; j++){
+				(*policial).pesos[i][j] = p[i][j];
+			}
+		}
+	}
+	else{
+		for (i=0; i<5; i++){
+			for (j=0; j<23; j++){
+				// valor int no intervalo [-1000, 1000] convertido para float
+				(*policial).pesos[i][j] = (float)((rand() % 2001) - 1000);
+			}
+		}
+	}*/
+// ---------------------------------------------------------------------------------------------------------------------------
 }
 
 void calculcar_pesos_camada_oculta(Personagem *policial){
 	int i, j;
+
+	// para treinar o policial ------------------------------------------------
 	for (i=0; i<5; i++){
 		for (j=0; j<5; j++){
 			// valor int no intervalo [-1000, 1000] convertido para float
 			(*policial).pesos_camada_oculta[i][j] = (float)((rand() % 2001) - 1000);
 		}
 	}
+	// -----------------------------------------------------------------------
+
+	// para mostrar o policial treinado -----------------------------------------------------------------------------------------
+	/*if ((*policial).num == NUM_POLICIAIS){
+		float p_oculta[5][5] = {
+		{288, 408, 352, -720, 72},
+		{256, 246, -519, 1000, 441},
+		{-344, 1000, -696, -175, 124},
+		{349, -680, -581, 704, -431},
+		{-1000, -161, -1000, -32, 1000}
+		};
+		for (i=0; i<5; i++){
+			for (j=0; j<5; j++){
+				(*policial).pesos_camada_oculta[i][j] = p_oculta[i][j];
+			}
+		}
+	}
+	else{
+		for (i=0; i<5; i++){
+			for (j=0; j<5; j++){
+				// valor int no intervalo [-1000, 1000] convertido para float
+				(*policial).pesos_camada_oculta[i][j] = (float)((rand() % 2001) - 1000);
+			}
+		}
+	}*/
+	// ---------------------------------------------------------------------------------------------------------------------------
+
 }
 
 void calcular_inputs(Personagem *policial, Mundo mundo){
@@ -1903,6 +1961,14 @@ int main(int argc, char **argv){
 					}
 					atualizar_mapa(&mundo, policiais, ladrao);
 										
+				}
+
+				if (pause == 1) {
+					desenhar_cenario(mundo, policiais[NUM_POLICIAIS-1]);
+					desenhar_ladrao(ladrao, policiais[NUM_POLICIAIS-1]);
+					for (po=0; po<NUM_POLICIAIS; po++){
+						desenhar_policial(policiais[po], mundo, policiais[NUM_POLICIAIS-1]);
+					}
 				}
 
 				// escreve o tempo
